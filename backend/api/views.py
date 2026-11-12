@@ -52,3 +52,14 @@ class ProjetoViewSet(viewsets.ModelViewSet):
 class AlocacaoViewSet(viewsets.ModelViewSet):
     queryset = Alocacao.objects.select_related('membro', 'projeto').order_by('id')
     serializer_class = AlocacaoSerializer
+
+    def get_queryset(self):
+        # Filtros opcionais: /api/alocacoes/?projeto=<id> e/ou ?membro=<id>
+        queryset = super().get_queryset()
+        for campo in ('projeto', 'membro'):
+            valor = self.request.query_params.get(campo)
+            if valor is not None:
+                if not valor.isdigit():
+                    raise ValidationError({campo: f'Informe o id numérico do {campo}.'})
+                queryset = queryset.filter(**{f'{campo}_id': valor})
+        return queryset

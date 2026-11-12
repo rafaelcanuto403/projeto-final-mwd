@@ -25,5 +25,11 @@ python manage.py runserver       # http://127.0.0.1:8000/api/
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                         # http://localhost:5173/projetos
 ```
+
+O backend precisa estar rodando. Em desenvolvimento, o Vite repassa as chamadas `/api/...`
+para `http://127.0.0.1:8000` (ver `vite.config.js`), então o frontend funciona em qualquer porta.
+
+Logos das empresas parceiras ficam em `frontend/public/logos/` (SVG com fundo transparente;
+o CSS deixa todas brancas para o tema escuro).

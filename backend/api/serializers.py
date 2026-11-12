@@ -47,8 +47,13 @@ class ProjetoSerializer(serializers.ModelSerializer):
 
 class AlocacaoSerializer(serializers.ModelSerializer):
     membro_nome = serializers.CharField(source='membro.nome', read_only=True)
+    membro_sigla = serializers.CharField(source='membro.sigla', read_only=True)
+    membro_foto_url = serializers.CharField(source='membro.foto_url', read_only=True)
     projeto_nome = serializers.CharField(source='projeto.nome', read_only=True)
 
     class Meta:
         model = Alocacao
-        fields = ['id', 'membro', 'membro_nome', 'projeto', 'projeto_nome', 'funcao', 'escopo']
+        fields = [
+            'id', 'membro', 'membro_nome', 'membro_sigla', 'membro_foto_url',
+            'projeto', 'projeto_nome', 'funcao', 'escopo',
+        ]

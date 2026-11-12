@@ -4,16 +4,17 @@ from datetime import date, timedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from api.models import EmpresaParceira, Projeto
+from api.models import Alocacao, EmpresaParceira, Membro, Projeto
 
 # Dados FICTÍCIOS para desenvolver o frontend.
-# Nome do projeto = inicial da EP + número sequencial (ex.: W1, W2, C1...).
+# Nome do projeto = inicial da EP + número sequencial (ex.: C154, C155...).
+# EP: (quantidade de projetos de exemplo, número do primeiro projeto)
 QUANTIDADE_POR_EMPRESA = {
-    'CERTI': 6,
-    'WEG': 5,
-    'Embraco/Nidec': 4,
-    'Landis+Gyr': 3,
-    'NEO': 2,
+    'CERTI': (6, 152),          # C152 a C157: o projeto atual da CERTI é o C157
+    'WEG': (5, 1),
+    'Embraco/Nidec': (4, 143),  # a Embraco/Nidec já está no E142
+    'Landis+Gyr': (3, 1),
+    'NEO': (2, 103),            # o NEO já está no N102
 }
 
 DESCRICOES = [
@@ -28,8 +29,15 @@ DESCRICOES = [
 ]
 
 
+# Equipe fictícia: 1 gerente + 2 a 4 executores por projeto
+ESCOPOS = ['Software', 'Hardware', 'Dados', 'Processos', 'Design', 'Pesquisa']
+
+
 class Command(BaseCommand):
-    help = 'Cria projetos FICTÍCIOS (W1, C1, ...) para desenvolvimento do frontend.'
+    help = (
+        'Cria projetos FICTÍCIOS (W1, C1, ...) e aloca membros já cadastrados neles, '
+        'para desenvolvimento do frontend.'
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -51,8 +59,14 @@ class Command(BaseCommand):
                     'Já existem projetos no banco. Use --limpar para apagá-los e recriar os exemplos.'
                 )
 
-            criados = 0
-            for nome_empresa, quantidade in QUANTIDADE_POR_EMPRESA.items():
+            membros = list(Membro.objects.order_by('sigla'))
+            if len(membros) < 3:
+                self.stdout.write(self.style.WARNING(
+                    'Poucos membros cadastrados: rode "importar_membros" antes para criar as alocações.'
+                ))
+
+            criados = alocacoes = 0
+            for nome_empresa, (quantidade, primeiro_numero) in QUANTIDADE_POR_EMPRESA.items():
                 empresa = EmpresaParceira.objects.filter(nome=nome_empresa).first()
                 if empresa is None:
                     self.stdout.write(self.style.WARNING(f'Empresa "{nome_empresa}" não encontrada, pulando.'))
@@ -73,8 +87,8 @@ class Command(BaseCommand):
                     else:
                         status = Projeto.Status.PLANEJAMENTO
 
-                    Projeto.objects.create(
-                        nome=f'{inicial}{numero}',
+                    projeto = Projeto.objects.create(
+                        nome=f'{inicial}{primeiro_numero + numero - 1}',
                         descricao=rng.choice(DESCRICOES),
                         empresa=empresa,
                         status=status,
@@ -83,4 +97,17 @@ class Command(BaseCommand):
                     )
                     criados += 1
 
-        self.stdout.write(self.style.SUCCESS(f'{criados} projetos de exemplo criados.'))
+                    if len(membros) >= 3:
+                        equipe = rng.sample(membros, k=min(len(membros), rng.randint(3, 5)))
+                        for indice, membro in enumerate(equipe):
+                            Alocacao.objects.create(
+                                membro=membro,
+                                projeto=projeto,
+                                funcao='Gerente de projeto' if indice == 0 else 'Executor',
+                                escopo='Gestão' if indice == 0 else rng.choice(ESCOPOS),
+                            )
+                            alocacoes += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'{criados} projetos de exemplo criados, com {alocacoes} alocações.'
+        ))
