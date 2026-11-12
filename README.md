@@ -5,7 +5,18 @@ Monorepo com o frontend e o backend do projeto.
 ## Estrutura
 
 - `frontend/` — aplicação React + Vite
-- `backend/` — API (em desenvolvimento)
+- `backend/` — API REST com Django + Django REST Framework
+
+## Backend
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate          
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver       # http://127.0.0.1:8000/api/
+```
 
 ## Frontend
 

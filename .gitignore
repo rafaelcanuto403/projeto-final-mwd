@@ -1,6 +1,13 @@
 ﻿# Dependências
 node_modules/
 
+# Python / Django
+venv/
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+
 # Builds
 dist/
 build/
