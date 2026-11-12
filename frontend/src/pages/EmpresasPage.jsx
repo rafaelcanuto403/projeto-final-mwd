@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import EmpresaCard from '../components/EmpresaCard.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import { useApi } from '../hooks/useApi.js'
@@ -8,7 +9,17 @@ export default function EmpresasPage() {
 
   return (
     <section>
-      <h2 className="titulo-secao">Empresas parceiras</h2>
+      <div className="secao-cabecalho">
+        <h2 className="titulo-secao">Empresas parceiras</h2>
+        <div className="acoes">
+          <Link to="/projetos/empresa/nova" className="botao botao--fantasma">
+            + Nova empresa
+          </Link>
+          <Link to="/projetos/novo" className="botao botao--primario">
+            + Novo projeto
+          </Link>
+        </div>
+      </div>
 
       {carregando && <Carregando />}
       {erro && <Erro mensagem={erro} />}

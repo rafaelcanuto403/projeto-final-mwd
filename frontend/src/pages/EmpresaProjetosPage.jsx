@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import { useApi } from '../hooks/useApi.js'
@@ -7,6 +8,8 @@ import { formatarData } from '../utils/formatar.js'
 
 export default function EmpresaProjetosPage() {
   const { id } = useParams()
+  const navegar = useNavigate()
+  const [erroAcao, setErroAcao] = useState(null)
 
   // Busca empresa e projetos em paralelo
   const { dados, carregando, erro } = useApi(
@@ -14,6 +17,17 @@ export default function EmpresaProjetosPage() {
     [id],
   )
   const [empresa, projetos] = dados ?? []
+
+  async function excluirEmpresa() {
+    if (!window.confirm(`Excluir a empresa ${empresa.nome}? Esta ação não pode ser desfeita.`)) return
+    try {
+      await api.excluirEmpresa(empresa.id)
+      navegar('/projetos')
+    } catch (e) {
+      // ex.: "Não é possível excluir uma empresa que possui projetos vinculados."
+      setErroAcao(e.message)
+    }
+  }
 
   return (
     <section>
@@ -23,6 +37,7 @@ export default function EmpresaProjetosPage() {
 
       {carregando && <Carregando />}
       {erro && <Erro mensagem={erro} />}
+      {erroAcao && <p className="alerta alerta--erro">{erroAcao}</p>}
 
       {empresa && (
         <>
@@ -37,6 +52,18 @@ export default function EmpresaProjetosPage() {
               <p className="texto-suave">
                 {empresa.total_projetos} {empresa.total_projetos === 1 ? 'projeto' : 'projetos'} com o NEO
               </p>
+            </div>
+
+            <div className="acoes acoes--direita">
+              <Link to={`/projetos/empresa/${empresa.id}/editar`} className="botao botao--fantasma">
+                Editar
+              </Link>
+              <button type="button" className="botao botao--perigo" onClick={excluirEmpresa}>
+                Excluir
+              </button>
+              <Link to={`/projetos/novo?empresa=${empresa.id}`} className="botao botao--primario">
+                + Novo projeto
+              </Link>
             </div>
           </header>
 

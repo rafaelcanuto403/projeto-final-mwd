@@ -478,3 +478,311 @@ img {
     align-items: flex-start;
   }
 }
+
+/* ===== Botões ===== */
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--texto);
+  background: transparent;
+  border: 1px solid var(--borda-hover);
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    opacity 0.2s;
+}
+
+.botao:hover {
+  background: var(--superficie-hover);
+  border-color: #4a4a4a;
+}
+
+.botao:focus-visible {
+  outline: 2px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.botao--primario {
+  color: #111;
+  background: var(--destaque);
+  border-color: var(--destaque);
+}
+
+.botao--primario:hover {
+  background: #ff8a3d;
+  border-color: #ff8a3d;
+}
+
+.botao--perigo {
+  color: #fca5a5;
+  border-color: rgb(239 68 68 / 40%);
+}
+
+.botao--perigo:hover {
+  background: rgb(239 68 68 / 12%);
+  border-color: rgb(239 68 68 / 70%);
+}
+
+.botao--icone {
+  min-height: 32px;
+  width: 32px;
+  padding: 0;
+  border-color: transparent;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.botao--icone:hover {
+  color: var(--texto);
+}
+
+.botao--icone-perigo:hover {
+  color: #fca5a5;
+  background: rgb(239 68 68 / 12%);
+  border-color: transparent;
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.acoes--direita {
+  margin-left: auto;
+}
+
+/* Título de seção + botões na mesma linha */
+.secao-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.secao-cabecalho .titulo-secao {
+  margin-bottom: 0;
+}
+
+/* ===== Alertas ===== */
+.alerta {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.alerta--erro {
+  color: #fca5a5;
+  background: rgb(239 68 68 / 10%);
+  border: 1px solid rgb(239 68 68 / 35%);
+}
+
+/* ===== Formulários ===== */
+.formulario-pagina {
+  max-width: 760px;
+}
+
+.formulario-pagina h1 {
+  font-size: 2rem;
+  margin-bottom: 32px;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formulario__linha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.formulario__linha--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.formulario__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campo label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.campo__obrigatorio {
+  color: var(--destaque);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borda-hover);
+  border-radius: 10px;
+  transition: border-color 0.2s;
+}
+
+.campo textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--destaque);
+}
+
+.campo select:disabled {
+  opacity: 0.6;
+}
+
+.campo--erro input,
+.campo--erro select,
+.campo--erro textarea {
+  border-color: rgb(239 68 68 / 70%);
+}
+
+.campo__mensagem,
+.campo__dica {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.campo__mensagem {
+  color: #fca5a5;
+}
+
+.campo__dica {
+  color: var(--texto-fraco);
+}
+
+/* Prévia do card no cadastro de empresa */
+.previa-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.previa-logo__rotulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.empresa-card--previa {
+  width: 220px;
+  pointer-events: none;
+}
+
+/* ===== Modal ===== */
+.modal {
+  width: min(560px, calc(100% - 32px));
+  padding: 0;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borda-hover);
+  border-radius: var(--raio);
+}
+
+.modal::backdrop {
+  background: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(2px);
+}
+
+.modal__caixa {
+  padding: 24px;
+}
+
+.modal__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.modal__cabecalho h2 {
+  font-size: 1.25rem;
+}
+
+.modal .campo input,
+.modal .campo select {
+  background: var(--fundo);
+}
+
+/* Botões de editar/remover no canto do card do membro */
+.membro-card {
+  position: relative;
+}
+
+.membro-card__acoes {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.membro-card:hover .membro-card__acoes,
+.membro-card:focus-within .membro-card__acoes {
+  opacity: 1;
+}
+
+/* Em telas de toque não existe hover: deixa os botões sempre visíveis */
+@media (hover: none) {
+  .membro-card__acoes {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .formulario__linha,
+  .formulario__linha--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .acoes--direita {
+    margin-left: 0;
+  }
+}
