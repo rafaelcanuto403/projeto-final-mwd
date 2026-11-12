@@ -1,5 +1,6 @@
-from django.db.models import ProtectedError
+from django.db.models import Count, ProtectedError
 from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from .models import Alocacao, EmpresaParceira, Membro, Projeto
@@ -12,7 +13,10 @@ from .serializers import (
 
 
 class EmpresaParceiraViewSet(viewsets.ModelViewSet):
-    queryset = EmpresaParceira.objects.all().order_by('nome')
+    # Empresas com mais projetos aparecem primeiro, como nos cards do frontend
+    queryset = EmpresaParceira.objects.annotate(
+        total_projetos=Count('projetos')
+    ).order_by('-total_projetos', 'nome')
     serializer_class = EmpresaParceiraSerializer
 
     def destroy(self, request, *args, **kwargs):
@@ -33,6 +37,16 @@ class MembroViewSet(viewsets.ModelViewSet):
 class ProjetoViewSet(viewsets.ModelViewSet):
     queryset = Projeto.objects.select_related('empresa').order_by('-data_inicio')
     serializer_class = ProjetoSerializer
+
+    def get_queryset(self):
+        # Filtro opcional: /api/projetos/?empresa=<id>
+        queryset = super().get_queryset()
+        empresa_id = self.request.query_params.get('empresa')
+        if empresa_id is not None:
+            if not empresa_id.isdigit():
+                raise ValidationError({'empresa': 'Informe o id numérico da empresa.'})
+            queryset = queryset.filter(empresa_id=empresa_id)
+        return queryset
 
 
 class AlocacaoViewSet(viewsets.ModelViewSet):

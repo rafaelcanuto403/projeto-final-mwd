@@ -4,9 +4,17 @@ from .models import Alocacao, EmpresaParceira, Membro, Projeto
 
 
 class EmpresaParceiraSerializer(serializers.ModelSerializer):
+    # Quantidade de projetos da empresa (exibida nos cards "N projetos")
+    total_projetos = serializers.SerializerMethodField()
+
     class Meta:
         model = EmpresaParceira
-        fields = ['id', 'nome', 'logo_url']
+        fields = ['id', 'nome', 'logo_url', 'total_projetos']
+
+    def get_total_projetos(self, obj):
+        # Na listagem vem pronto do annotate da view; em create/update, conta direto
+        total = getattr(obj, 'total_projetos', None)
+        return total if total is not None else obj.projetos.count()
 
 
 class MembroSerializer(serializers.ModelSerializer):

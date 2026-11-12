@@ -16,6 +16,7 @@ python -m venv venv
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py importar_membros   # carga inicial dos membros atuais a partir da API do NEO
+python manage.py criar_projetos_exemplo   # (opcional) projetos FICTÍCIOS para desenvolvimento
 python manage.py runserver       # http://127.0.0.1:8000/api/
 ```
 
