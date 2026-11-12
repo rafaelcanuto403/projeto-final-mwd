@@ -30,7 +30,10 @@ class EmpresaParceiraViewSet(viewsets.ModelViewSet):
 
 
 class MembroViewSet(viewsets.ModelViewSet):
-    queryset = Membro.objects.all().order_by('nome')
+    # distinct=True: o mesmo projeto conta uma vez, mesmo com duas funções nele
+    queryset = Membro.objects.annotate(
+        total_projetos=Count('alocacoes__projeto', distinct=True)
+    ).order_by('nome')
     serializer_class = MembroSerializer
 
 
@@ -50,7 +53,7 @@ class ProjetoViewSet(viewsets.ModelViewSet):
 
 
 class AlocacaoViewSet(viewsets.ModelViewSet):
-    queryset = Alocacao.objects.select_related('membro', 'projeto').order_by('id')
+    queryset = Alocacao.objects.select_related('membro', 'projeto__empresa').order_by('id')
     serializer_class = AlocacaoSerializer
 
     def get_queryset(self):

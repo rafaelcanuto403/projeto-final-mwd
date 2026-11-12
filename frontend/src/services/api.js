@@ -43,6 +43,7 @@ export const api = {
   excluirEmpresa: (id) => remover(`/empresas/${id}/`),
 
   // Projetos
+  listarProjetos: () => request('/projetos/'),
   listarProjetosDaEmpresa: (empresaId) => request(`/projetos/?empresa=${empresaId}`),
   buscarProjeto: (id) => request(`/projetos/${id}/`),
   criarProjeto: (dados) => post('/projetos/', dados),
@@ -51,9 +52,14 @@ export const api = {
 
   // Membros
   listarMembros: () => request('/membros/'),
+  buscarMembro: (id) => request(`/membros/${id}/`),
+  criarMembro: (dados) => post('/membros/', dados),
+  atualizarMembro: (id, dados) => patch(`/membros/${id}/`, dados),
+  excluirMembro: (id) => remover(`/membros/${id}/`),
 
   // Alocações (equipe dos projetos)
   listarAlocacoesDoProjeto: (projetoId) => request(`/alocacoes/?projeto=${projetoId}`),
+  listarAlocacoesDoMembro: (membroId) => request(`/alocacoes/?membro=${membroId}`),
   criarAlocacao: (dados) => post('/alocacoes/', dados),
   atualizarAlocacao: (id, dados) => patch(`/alocacoes/${id}/`, dados),
   excluirAlocacao: (id) => remover(`/alocacoes/${id}/`),

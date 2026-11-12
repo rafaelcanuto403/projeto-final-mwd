@@ -11,8 +11,14 @@ export default function Layout() {
           </NavLink>
 
           <nav className="menu">
+            <NavLink to="/" end className="menu__link">
+              Início
+            </NavLink>
             <NavLink to="/projetos" className="menu__link">
               Projetos
+            </NavLink>
+            <NavLink to="/membros" className="menu__link">
+              Membros
             </NavLink>
           </nav>
         </div>

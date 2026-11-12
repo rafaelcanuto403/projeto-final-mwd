@@ -148,7 +148,11 @@ export default function ProjetoPage() {
               </div>
               <Avatar nome={alocacao.membro_nome} fotoUrl={alocacao.membro_foto_url} />
               <div className="membro-card__nome">
-                <h3>{alocacao.membro_nome}</h3>
+                <h3>
+                  <Link to={`/membros/${alocacao.membro}`} className="link-sutil">
+                    {alocacao.membro_nome}
+                  </Link>
+                </h3>
                 <span className="membro-card__sigla">{alocacao.membro_sigla}</span>
               </div>
               <p className="membro-card__funcao">{alocacao.funcao}</p>

@@ -1,8 +1,13 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import EmpresaFormPage from './pages/EmpresaFormPage.jsx'
 import EmpresaProjetosPage from './pages/EmpresaProjetosPage.jsx'
 import EmpresasPage from './pages/EmpresasPage.jsx'
+import InicioPage from './pages/InicioPage.jsx'
+import MembroFormPage from './pages/MembroFormPage.jsx'
+import MembroPage from './pages/MembroPage.jsx'
+import MembrosPage from './pages/MembrosPage.jsx'
+import NaoEncontrada from './pages/NaoEncontrada.jsx'
 import ProjetoFormPage from './pages/ProjetoFormPage.jsx'
 import ProjetoPage from './pages/ProjetoPage.jsx'
 
@@ -11,8 +16,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          {/* Por enquanto a página inicial leva direto para Projetos */}
-          <Route index element={<Navigate to="/projetos" replace />} />
+          <Route index element={<InicioPage />} />
 
           {/* Empresas parceiras */}
           <Route path="projetos" element={<EmpresasPage />} />
@@ -25,7 +29,13 @@ export default function App() {
           <Route path="projetos/:id" element={<ProjetoPage />} />
           <Route path="projetos/:id/editar" element={<ProjetoFormPage />} />
 
-          <Route path="*" element={<p className="estado">Página não encontrada.</p>} />
+          {/* Membros */}
+          <Route path="membros" element={<MembrosPage />} />
+          <Route path="membros/novo" element={<MembroFormPage />} />
+          <Route path="membros/:id" element={<MembroPage />} />
+          <Route path="membros/:id/editar" element={<MembroFormPage />} />
+
+          <Route path="*" element={<NaoEncontrada />} />
         </Route>
       </Routes>
     </BrowserRouter>
