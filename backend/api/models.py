@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from django.db import models
 
 
@@ -15,9 +16,18 @@ class EmpresaParceira(models.Model):
 
 
 class Membro(models.Model):
-    sigla = models.CharField(max_length=3, unique=True)
+    sigla = models.CharField(
+        max_length=3,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[A-Z]{3}$',
+                message='A sigla deve ter exatamente 3 letras maiúsculas (ex.: RCN).',
+            )
+        ],
+    )
     nome = models.CharField(max_length=120)
-    email = models.CharField(max_length=160, unique=True)
+    email = models.EmailField(max_length=160, unique=True)
     foto_url = models.CharField(max_length=500, blank=True, null=True)
 
     class Meta:
