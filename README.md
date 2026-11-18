@@ -1,4 +1,4 @@
-﻿# Projeto Final MWD — Projetos do NEO
+﻿# Projeto Final MWD — Hub de Projetos do NEO
 
 Sistema web para acompanhar os projetos que o NEO realizou e está realizando com as
 **empresas parceiras (EPs)** e a **equipe de membros** alocada em cada projeto.
