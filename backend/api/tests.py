@@ -1,23 +1,22 @@
+import shutil
+import tempfile
 from datetime import date
 from io import StringIO
+from pathlib import Path
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import CommandError, call_command
+from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .management.commands.importar_membros import converter_foto
-from .models import Alocacao, EmpresaParceira, Membro, Projeto
+from .models import Alocacao, Documento, EmpresaParceira, Membro, Projeto
 
 
 class BaseTestCase(APITestCase):
-    """Dados mínimos usados pelos testes.
-
-    Obs.: as migrations de dados criam as 5 EPs iniciais (WEG, CERTI...) também no
-    banco de testes, por isso os testes criam EPs com nomes próprios.
-    """
-
     def setUp(self):
         self.empresa = EmpresaParceira.objects.create(nome='Empresa Teste', logo_url='/logos/teste.svg')
         self.outra_empresa = EmpresaParceira.objects.create(nome='Outra Empresa')
@@ -31,7 +30,7 @@ class BaseTestCase(APITestCase):
             data_fim_prevista=date(2026, 6, 10),
         )
         self.alocacao = Alocacao.objects.create(
-            membro=self.ana, projeto=self.projeto, funcao='Gerente de projeto', escopo='Gestão'
+            membro=self.ana, projeto=self.projeto, funcao='Gerente de projeto', escopo='Web'
         )
 
 
@@ -42,7 +41,9 @@ class MigracoesDeDadosTests(APITestCase):
         self.assertEqual(logos['CERTI'], '/logos/certi.svg')
         self.assertEqual(logos['Embraco/Nidec'], '/logos/embraco-nidec.svg')
         self.assertEqual(logos['Landis+Gyr'], '/logos/landis-gyr.svg')
-        self.assertEqual(logos['NEO'], '/logos/neo-branco.svg')
+        self.assertEqual(logos['NEO Empresarial'], '/logos/neo-branco.svg')
+        self.assertNotIn('NEO', logos)
+        self.assertEqual(logos['Comerc Energia'], '/logos/comerc-energia.svg')
 
 
 class MembroModelTests(APITestCase):
@@ -54,7 +55,7 @@ class MembroModelTests(APITestCase):
                     membro.full_clean()
 
     def test_sigla_valida(self):
-        Membro(sigla='XYZ', nome='X', email='xyz@x.com').full_clean()  # não deve lançar erro
+        Membro(sigla='XYZ', nome='X', email='xyz@x.com').full_clean()
 
 
 class EmpresaApiTests(BaseTestCase):
@@ -62,7 +63,7 @@ class EmpresaApiTests(BaseTestCase):
         resposta = self.client.get('/api/empresas/')
         self.assertEqual(resposta.status_code, status.HTTP_200_OK)
         primeira = resposta.json()[0]
-        self.assertEqual(primeira['nome'], 'Empresa Teste')  # única com projetos
+        self.assertEqual(primeira['nome'], 'Empresa Teste')
         self.assertEqual(primeira['total_projetos'], 1)
 
     def test_criar_empresa_retorna_total_zero(self):
@@ -124,7 +125,6 @@ class ProjetoApiTests(BaseTestCase):
         self.assertIn('data_fim_prevista', resposta.json())
 
     def test_edicao_parcial_tambem_valida_datas(self):
-        # Só a data de fim é enviada; o início (10/01) vem do projeto já salvo
         resposta = self.client.patch(
             f'/api/projetos/{self.projeto.id}/', {'data_fim_prevista': '2025-12-31'}, format='json'
         )
@@ -169,8 +169,7 @@ class MembroApiTests(BaseTestCase):
         self.assertIn('email', resposta.json())
 
     def test_total_de_projetos_conta_cada_projeto_uma_vez(self):
-        # Ana com duas funções no mesmo projeto continua com 1 projeto
-        Alocacao.objects.create(membro=self.ana, projeto=self.projeto, funcao='Executor', escopo='Dados')
+        Alocacao.objects.create(membro=self.ana, projeto=self.projeto, funcao='Executor', escopo='Data Science')
         membros = {m['sigla']: m for m in self.client.get('/api/membros/').json()}
         self.assertEqual(membros['ANA']['total_projetos'], 1)
         self.assertEqual(membros['BIA']['total_projetos'], 0)
@@ -183,7 +182,7 @@ class MembroApiTests(BaseTestCase):
 class AlocacaoApiTests(BaseTestCase):
     def test_filtra_por_projeto_e_por_membro(self):
         outro = Projeto.objects.create(nome='T9', empresa=self.empresa, data_inicio=date(2026, 2, 1))
-        Alocacao.objects.create(membro=self.bia, projeto=outro, funcao='Executor', escopo='Dados')
+        Alocacao.objects.create(membro=self.bia, projeto=outro, funcao='Executor', escopo='Data Science')
 
         por_projeto = self.client.get(f'/api/alocacoes/?projeto={self.projeto.id}').json()
         self.assertEqual([a['membro_sigla'] for a in por_projeto], ['ANA'])
@@ -208,17 +207,104 @@ class AlocacaoApiTests(BaseTestCase):
         self.assertIn('funcao', resposta.json())
         self.assertIn('escopo', resposta.json())
 
+    def test_escopo_so_aceita_valores_da_lista(self):
+        url = f'/api/alocacoes/{self.alocacao.id}/'
+        resposta = self.client.patch(url, {'escopo': 'Hardware'}, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Visão Computacional', resposta.json()['escopo'][0])
+
+        resposta = self.client.patch(url, {'escopo': 'Business Intelligence'}, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+    def test_equipe_tem_no_maximo_3_membros(self):
+        for sigla in ['BBB', 'CCC']:
+            membro = Membro.objects.create(sigla=sigla, nome=sigla, email=f'{sigla}@x.com')
+            Alocacao.objects.create(membro=membro, projeto=self.projeto, funcao='Executor', escopo='Data Science')
+
+        resposta = self.client.post(
+            '/api/alocacoes/',
+            {'membro': self.bia.id, 'projeto': self.projeto.id, 'funcao': 'Executor', 'escopo': 'Data Science'},
+            format='json',
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('máximo', resposta.json()['non_field_errors'][0])
+
+        resposta = self.client.patch(f'/api/alocacoes/{self.alocacao.id}/', {'escopo': 'AI'}, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+
+PASTA_MEDIA_TESTES = tempfile.mkdtemp()
+
+
+@override_settings(MEDIA_ROOT=PASTA_MEDIA_TESTES)
+class DocumentoApiTests(BaseTestCase):
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(PASTA_MEDIA_TESTES, ignore_errors=True)
+        super().tearDownClass()
+
+    def enviar(self, nome='Abertura C1.pdf', conteudo=b'%PDF-1.4 teste', **campos):
+        dados = {'projeto': self.projeto.id, 'tipo': 'abertura', **campos}
+        dados['arquivo'] = SimpleUploadedFile(nome, conteudo)
+        return self.client.post('/api/documentos/', dados, format='multipart')
+
+    def test_upload_lista_por_projeto_e_titulo_padrao(self):
+        resposta = self.enviar()
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.json())
+        documento = resposta.json()
+        self.assertEqual(documento['titulo'], 'Abertura C1')
+        self.assertEqual(documento['tipo_display'], 'Documento de abertura')
+        self.assertTrue(documento['arquivo_url'].startswith('/media/documentos/'))
+        self.assertEqual(documento['tamanho'], len(b'%PDF-1.4 teste'))
+
+        outro = Projeto.objects.create(nome='T2', empresa=self.empresa, data_inicio=date(2026, 3, 1))
+        self.client.post(
+            '/api/documentos/',
+            {'projeto': outro.id, 'tipo': 'contrato', 'titulo': 'Contrato',
+             'arquivo': SimpleUploadedFile('c.pdf', b'x')},
+            format='multipart',
+        )
+        do_projeto = self.client.get(f'/api/documentos/?projeto={self.projeto.id}').json()
+        self.assertEqual([d['titulo'] for d in do_projeto], ['Abertura C1'])
+
+    def test_recusa_formato_nao_aceito(self):
+        resposta = self.enviar(nome='script.exe')
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Formato não aceito', resposta.json()['arquivo'][0])
+
+    def test_recusa_arquivo_maior_que_20_mb(self):
+        with patch('api.serializers.TAMANHO_MAXIMO_DOCUMENTO', 10):
+            resposta = self.enviar(conteudo=b'x' * 11)
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('20 MB', resposta.json()['arquivo'][0])
+
+    def test_excluir_apaga_o_arquivo_do_disco(self):
+        documento = self.enviar(titulo='Contrato').json()
+        caminho = Path(PASTA_MEDIA_TESTES) / Documento.objects.get(id=documento['id']).arquivo.name
+        self.assertTrue(caminho.exists())
+
+        resposta = self.client.delete(f'/api/documentos/{documento["id"]}/')
+        self.assertEqual(resposta.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(caminho.exists())
+
+    def test_excluir_projeto_remove_os_documentos_e_arquivos(self):
+        documento = self.enviar().json()
+        caminho = Path(PASTA_MEDIA_TESTES) / Documento.objects.get(id=documento['id']).arquivo.name
+        self.projeto.delete()
+        self.assertFalse(Documento.objects.exists())
+        self.assertFalse(caminho.exists())
+
 
 class ImportarMembrosTests(APITestCase):
     USUARIOS = [
         {
             'username': 'abc', 'firstName': 'Ana', 'lastName': ' Beatriz  Costa', 'email': 'ABC@x.com',
-            'isActivate': True, 'pictureUrl': None,
+            'isActivate': True, 'pictureUrl': None, 'role': ' Executor  Pleno ',
             'drivePhotoUrl': 'https://drive.google.com/file/d/ID_123/view?usp=drive_link',
         },
         {
             'username': 'DEF', 'firstName': 'Davi', 'lastName': 'Ferreira', 'email': 'def@x.com',
-            'isActivate': False, 'pictureUrl': None, 'drivePhotoUrl': None,
+            'isActivate': False, 'pictureUrl': None, 'drivePhotoUrl': None, 'role': None,
         },
     ]
 
@@ -229,6 +315,14 @@ class ImportarMembrosTests(APITestCase):
             'https://drive.google.com/thumbnail?id=ABC-1&sz=w400',
         )
         self.assertIsNone(converter_foto({}))
+
+    def test_foto_local_tem_prioridade_sobre_a_da_api(self):
+        from .management.commands.importar_membros import PASTA_FOTOS_LOCAIS, foto_do_membro
+
+        sigla = next(PASTA_FOTOS_LOCAIS.glob('*.webp')).stem
+        usuario = {'username': sigla.upper(), 'pictureUrl': 'https://foto-da-api'}
+        self.assertEqual(foto_do_membro(usuario), f'/membros/{sigla}.webp')
+        self.assertEqual(foto_do_membro({'username': 'ZZZ', 'pictureUrl': 'https://foto-da-api'}), 'https://foto-da-api')
 
     def importar(self, *args):
         with patch('api.management.commands.importar_membros.urlopen') as urlopen, \
@@ -243,11 +337,13 @@ class ImportarMembrosTests(APITestCase):
         self.assertEqual(membro.nome, 'Ana Beatriz Costa')
         self.assertEqual(membro.email, 'abc@x.com')
         self.assertEqual(membro.foto_url, 'https://drive.google.com/thumbnail?id=ID_123&sz=w400')
+        self.assertEqual(membro.cargo, 'Executor Pleno')
 
     def test_todos_inclui_inativos_e_rodar_de_novo_nao_duplica(self):
         self.importar('--todos')
         self.importar('--todos')
         self.assertEqual(Membro.objects.count(), 2)
+        self.assertEqual(Membro.objects.get(sigla='DEF').cargo, '')
 
 
 class ProjetosExemploTests(APITestCase):
@@ -258,8 +354,20 @@ class ProjetosExemploTests(APITestCase):
 
         nomes = set(Projeto.objects.values_list('nome', flat=True))
         self.assertEqual(Projeto.objects.count(), 20)
-        self.assertTrue({'C152', 'C157', 'W1', 'E143', 'N103', 'L3'} <= nomes)
+        self.assertTrue({'C152', 'C157', 'W146', 'W150', 'E143', 'N103', 'L025', 'L027'} <= nomes)
         self.assertTrue(Alocacao.objects.exists())
+        escopos = set(Alocacao.objects.values_list('escopo', flat=True))
+        self.assertTrue(escopos <= set(Alocacao.Escopo.values))
+        maior_equipe = max(p.alocacoes.count() for p in Projeto.objects.all())
+        self.assertLessEqual(maior_equipe, 3)
+
+    def test_cargos_gerenciais_nao_entram_nas_equipes(self):
+        for i, sigla in enumerate(['AAA', 'BBB', 'CCC', 'VCE', 'ADU']):
+            Membro.objects.create(sigla=sigla, nome=f'Membro {i}', email=f'{sigla}@x.com')
+        call_command('criar_projetos_exemplo', stdout=StringIO())
+
+        self.assertTrue(Alocacao.objects.exists())
+        self.assertFalse(Alocacao.objects.filter(membro__sigla__in=['VCE', 'ADU']).exists())
 
     def test_recusa_rodar_com_projetos_existentes(self):
         empresa = EmpresaParceira.objects.get(nome='WEG')

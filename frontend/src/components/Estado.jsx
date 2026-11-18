@@ -1,6 +1,5 @@
-// Mensagens padrão de carregamento, erro e lista vazia
-export function Carregando({ texto = 'Carregando...' }) {
-  return <p className="estado">{texto}</p>
+export function Carregando() {
+  return <p className="estado">Carregando...</p>
 }
 
 export function Erro({ mensagem }) {

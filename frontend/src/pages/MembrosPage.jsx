@@ -2,10 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
-import { useApi } from '../hooks/useApi.js'
-import { api } from '../services/api.js'
+import { api, useApi } from '../api/useApi.js'
 
-// Remove acentos e deixa minúsculo, para a busca ignorar "á", "ç" etc.
 const normalizar = (texto) =>
   texto
     .normalize('NFD')
@@ -18,7 +16,7 @@ export default function MembrosPage() {
 
   const termo = normalizar(busca.trim())
   const filtrados = (membros ?? []).filter(
-    (m) => !termo || normalizar(m.nome).includes(termo) || normalizar(m.sigla).includes(termo),
+    (m) => !termo || [m.nome, m.sigla, m.cargo].some((texto) => normalizar(texto ?? '').includes(termo)),
   )
 
   return (
@@ -29,7 +27,7 @@ export default function MembrosPage() {
           <input
             type="search"
             className="busca"
-            placeholder="Buscar por nome ou sigla..."
+            placeholder="Buscar por nome, sigla ou cargo..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             aria-label="Buscar membros"
@@ -53,6 +51,7 @@ export default function MembrosPage() {
               <h3>{membro.nome}</h3>
               <span className="membro-card__sigla">{membro.sigla}</span>
             </div>
+            {membro.cargo && <span className="membro-card__cargo">{membro.cargo}</span>}
             <span className="texto-suave">
               {membro.total_projetos} {membro.total_projetos === 1 ? 'projeto' : 'projetos'}
             </span>

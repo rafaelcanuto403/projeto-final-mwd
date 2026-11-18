@@ -1,21 +1,18 @@
 import { useState } from 'react'
-import { ApiError } from '../services/api.js'
+import { ApiError } from '../api/useApi.js'
 
-// Controla os valores de um formulário, o envio e os erros vindos da API.
 export function useFormulario(valoresIniciais) {
   const [valores, setValores] = useState(valoresIniciais)
   const [erros, setErros] = useState({})
   const [erroGeral, setErroGeral] = useState(null)
   const [enviando, setEnviando] = useState(false)
 
-  // Para usar direto no onChange dos campos: <input name="nome" onChange={alterar} />
   function alterar(evento) {
     const { name, value } = evento.target
     setValores((atuais) => ({ ...atuais, [name]: value }))
     setErros((atuais) => ({ ...atuais, [name]: undefined }))
   }
 
-  // Executa `acao` (ex.: salvar na API) e distribui os erros pelos campos
   async function enviar(acao) {
     setEnviando(true)
     setErros({})

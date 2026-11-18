@@ -3,10 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { useApi } from '../hooks/useApi.js'
-import { api } from '../services/api.js'
+import { api, useApi } from '../api/useApi.js'
 
-// Ordem de exibição: em andamento → planejamento → concluídos (mais recentes primeiro)
 const ORDEM_STATUS = { em_andamento: 0, planejamento: 1, concluido: 2 }
 
 export default function MembroPage() {
@@ -57,6 +55,7 @@ export default function MembroPage() {
         <div className="perfil__dados">
           <span className="membro-card__sigla">{membro.sigla}</span>
           <h1>{membro.nome}</h1>
+          {membro.cargo && <p className="perfil__cargo">{membro.cargo}</p>}
           <a href={`mailto:${membro.email}`} className="perfil__email">
             {membro.email}
           </a>

@@ -1,11 +1,9 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Campo from '../components/Campo.jsx'
 import { Carregando, Erro } from '../components/Estado.jsx'
-import { useApi } from '../hooks/useApi.js'
+import { api, useApi } from '../api/useApi.js'
 import { useFormulario } from '../hooks/useFormulario.js'
-import { api } from '../services/api.js'
 
-// Página usada para criar (/projetos/empresa/nova) e editar (/projetos/empresa/:id/editar)
 export default function EmpresaFormPage() {
   const { id } = useParams()
   const editando = Boolean(id)

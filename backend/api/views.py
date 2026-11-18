@@ -3,17 +3,16 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from .models import Alocacao, EmpresaParceira, Membro, Projeto
+from .models import Alocacao, Documento, EmpresaParceira, Membro, Projeto
 from .serializers import (
     AlocacaoSerializer,
+    DocumentoSerializer,
     EmpresaParceiraSerializer,
     MembroSerializer,
     ProjetoSerializer,
 )
 
-
 class EmpresaParceiraViewSet(viewsets.ModelViewSet):
-    # Empresas com mais projetos aparecem primeiro, como nos cards do frontend
     queryset = EmpresaParceira.objects.annotate(
         total_projetos=Count('projetos')
     ).order_by('-total_projetos', 'nome')
@@ -30,7 +29,6 @@ class EmpresaParceiraViewSet(viewsets.ModelViewSet):
 
 
 class MembroViewSet(viewsets.ModelViewSet):
-    # distinct=True: o mesmo projeto conta uma vez, mesmo com duas funções nele
     queryset = Membro.objects.annotate(
         total_projetos=Count('alocacoes__projeto', distinct=True)
     ).order_by('nome')
@@ -42,7 +40,6 @@ class ProjetoViewSet(viewsets.ModelViewSet):
     serializer_class = ProjetoSerializer
 
     def get_queryset(self):
-        # Filtro opcional: /api/projetos/?empresa=<id>
         queryset = super().get_queryset()
         empresa_id = self.request.query_params.get('empresa')
         if empresa_id is not None:
@@ -57,7 +54,6 @@ class AlocacaoViewSet(viewsets.ModelViewSet):
     serializer_class = AlocacaoSerializer
 
     def get_queryset(self):
-        # Filtros opcionais: /api/alocacoes/?projeto=<id> e/ou ?membro=<id>
         queryset = super().get_queryset()
         for campo in ('projeto', 'membro'):
             valor = self.request.query_params.get(campo)
@@ -66,3 +62,18 @@ class AlocacaoViewSet(viewsets.ModelViewSet):
                     raise ValidationError({campo: f'Informe o id numérico do {campo}.'})
                 queryset = queryset.filter(**{f'{campo}_id': valor})
         return queryset
+
+
+class DocumentoViewSet(viewsets.ModelViewSet):
+    queryset = Documento.objects.select_related('projeto').order_by('-enviado_em')
+    serializer_class = DocumentoSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        projeto_id = self.request.query_params.get('projeto')
+        if projeto_id is not None:
+            if not projeto_id.isdigit():
+                raise ValidationError({'projeto': 'Informe o id numérico do projeto.'})
+            queryset = queryset.filter(projeto_id=projeto_id)
+        return queryset
+

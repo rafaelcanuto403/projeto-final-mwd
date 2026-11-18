@@ -1,14 +1,12 @@
 import Campo from './Campo.jsx'
+import ConsultaAlocacoes from './ConsultaAlocacoes.jsx'
 import { useFormulario } from '../hooks/useFormulario.js'
-import { api } from '../services/api.js'
+import { api } from '../api/useApi.js'
 
-const FUNCOES = ['Gerente de projeto', 'Executor', 'Consultor', 'Trainee']
-const ESCOPOS = ['Gestão', 'Software', 'Hardware', 'Dados', 'Processos', 'Design', 'Pesquisa']
+const FUNCOES = ['Gerente de projeto', 'Executor']
+const ESCOPOS = ['Web', 'Data Science', 'Business Intelligence', 'Visão Computacional', 'AI']
 
-// Formulário (usado dentro do Modal) para adicionar ou editar um membro na equipe.
-// - alocacao: a alocação sendo editada, ou null para adicionar
-// - membros: membros que podem ser escolhidos
-export default function AlocacaoForm({ projetoId, alocacao, membros, aoSalvar, aoCancelar }) {
+export default function AlocacaoForm({ projetoId, alocacao, membros, idsNaEquipe, aoSalvar, aoCancelar }) {
   const editando = Boolean(alocacao)
   const { valores, alterar, erros, erroGeral, enviando, enviar } = useFormulario({
     membro: alocacao ? String(alocacao.membro) : '',
@@ -22,7 +20,7 @@ export default function AlocacaoForm({ projetoId, alocacao, membros, aoSalvar, a
       membro: Number(valores.membro) || null,
       projeto: projetoId,
       funcao: valores.funcao.trim(),
-      escopo: valores.escopo.trim(),
+      escopo: valores.escopo,
     }
     const salva = await enviar(() =>
       editando ? api.atualizarAlocacao(alocacao.id, corpo) : api.criarAlocacao(corpo),
@@ -34,41 +32,50 @@ export default function AlocacaoForm({ projetoId, alocacao, membros, aoSalvar, a
     <form className="formulario" onSubmit={salvar} noValidate>
       {erroGeral && <p className="alerta alerta--erro">{erroGeral}</p>}
 
-      <Campo rotulo="Membro" nome="membro" erro={erros.membro} obrigatorio>
-        <select
-          id="membro"
-          name="membro"
-          value={valores.membro}
-          onChange={alterar}
-          disabled={editando} // ao editar, só função e escopo mudam
-        >
-          <option value="">Selecione...</option>
-          {membros.map((membro) => (
-            <option key={membro.id} value={membro.id}>
-              {membro.sigla} · {membro.nome}
-            </option>
-          ))}
-        </select>
-      </Campo>
+      {editando ? (
+        <Campo rotulo="Membro" nome="membro">
+          <select id="membro" name="membro" value={valores.membro} disabled>
+            {membros.map((membro) => (
+              <option key={membro.id} value={membro.id}>
+                {membro.sigla} · {membro.nome}
+              </option>
+            ))}
+          </select>
+        </Campo>
+      ) : (
+        <div className={`campo ${erros.membro ? 'campo--erro' : ''}`}>
+          <span className="campo__rotulo">
+            Membro<span className="campo__obrigatorio"> *</span>
+          </span>
+          <ConsultaAlocacoes
+            membros={membros}
+            idsNaEquipe={idsNaEquipe}
+            selecionado={valores.membro}
+            aoSelecionar={(id) => alterar({ target: { name: 'membro', value: id } })}
+          />
+          {erros.membro && <p className="campo__mensagem">{[].concat(erros.membro).join(' ')}</p>}
+        </div>
+      )}
 
       <div className="formulario__linha">
         <Campo rotulo="Função" nome="funcao" erro={erros.funcao} obrigatorio>
           <input id="funcao" name="funcao" list="lista-funcoes" value={valores.funcao} maxLength={60} onChange={alterar} />
         </Campo>
         <Campo rotulo="Escopo" nome="escopo" erro={erros.escopo} obrigatorio>
-          <input id="escopo" name="escopo" list="lista-escopos" value={valores.escopo} maxLength={60} onChange={alterar} />
+          <select id="escopo" name="escopo" value={valores.escopo} onChange={alterar}>
+            <option value="">Selecione...</option>
+            {ESCOPOS.map((e) => (
+              <option key={e} value={e}>
+                {e}
+              </option>
+            ))}
+          </select>
         </Campo>
       </div>
 
-      {/* Sugestões nos campos de texto (o usuário ainda pode digitar outro valor) */}
       <datalist id="lista-funcoes">
         {FUNCOES.map((f) => (
           <option key={f} value={f} />
-        ))}
-      </datalist>
-      <datalist id="lista-escopos">
-        {ESCOPOS.map((e) => (
-          <option key={e} value={e} />
         ))}
       </datalist>
 

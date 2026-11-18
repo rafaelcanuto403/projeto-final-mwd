@@ -2,9 +2,7 @@ import { Link } from 'react-router-dom'
 import EmpresaCard from '../components/EmpresaCard.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { useApi } from '../hooks/useApi.js'
-import { api } from '../services/api.js'
-import { formatarData } from '../utils/formatar.js'
+import { api, useApi } from '../api/useApi.js'
 
 export default function InicioPage() {
   const { dados, carregando, erro } = useApi(() =>
@@ -17,18 +15,13 @@ export default function InicioPage() {
   const [empresas, projetos, membros] = dados
   const doStatus = (status) => projetos.filter((p) => p.status === status)
   const emAndamento = doStatus('em_andamento')
-  // Próximos a começar: os que começam antes aparecem primeiro
   const emPlanejamento = doStatus('planejamento').sort((a, b) => a.data_inicio.localeCompare(b.data_inicio))
 
   return (
     <>
       <section className="inicio-hero">
-        <p className="inicio-hero__rotulo">NEO</p>
-        <h1>Projetos com empresas parceiras</h1>
-        <p className="inicio-hero__texto">
-          Acompanhe os projetos que o NEO realizou e está realizando com cada empresa parceira, e a equipe
-          alocada em cada um.
-        </p>
+        <h1>Hub de Projetos</h1>
+        <p className="inicio-hero__texto">Acompanhamento de projetos do NEO Empresarial</p>
         <div className="acoes">
           <Link to="/projetos" className="botao botao--primario">
             Ver projetos
@@ -59,12 +52,7 @@ export default function InicioPage() {
       </dl>
 
       <ListaResumo titulo="Em andamento" projetos={emAndamento} vazio="Nenhum projeto em andamento no momento." />
-      <ListaResumo
-        titulo="Próximos projetos"
-        projetos={emPlanejamento}
-        vazio="Nenhum projeto em planejamento."
-        mostrarInicio
-      />
+      <ListaResumo titulo="Backlog" projetos={emPlanejamento} vazio="Nenhum projeto em planejamento." />
 
       <section className="inicio-secao">
         <div className="secao-cabecalho">
@@ -83,7 +71,7 @@ export default function InicioPage() {
   )
 }
 
-function ListaResumo({ titulo, projetos, vazio, mostrarInicio = false }) {
+function ListaResumo({ titulo, projetos, vazio }) {
   return (
     <section className="inicio-secao">
       <h2 className="titulo-secao">{titulo}</h2>
@@ -102,11 +90,6 @@ function ListaResumo({ titulo, projetos, vazio, mostrarInicio = false }) {
                 <span>{projeto.empresa_nome}</span>
               </div>
               {projeto.descricao && <p className="texto-suave">{projeto.descricao}</p>}
-              <p className="projeto-card__datas">
-                {mostrarInicio
-                  ? `Começa em ${formatarData(projeto.data_inicio)}`
-                  : `${formatarData(projeto.data_inicio)} → ${formatarData(projeto.data_fim_prevista)}`}
-              </p>
             </Link>
           ))}
         </div>

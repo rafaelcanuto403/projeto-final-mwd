@@ -1,5 +1,3 @@
-// Rótulo + campo + mensagem de erro. O campo em si vem como children
-// (input, select ou textarea), para manter o HTML nativo.
 export default function Campo({ rotulo, nome, erro, obrigatorio = false, dica, children }) {
   const mensagens = Array.isArray(erro) ? erro.join(' ') : erro
 

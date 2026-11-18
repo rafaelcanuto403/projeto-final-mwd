@@ -1,6 +1,5 @@
 from django.db import migrations
 
-# Logo do NEO em branco com a seta vazada (a original laranja vira um círculo branco com o filtro CSS).
 ANTIGA, NOVA = '/logos/neo.svg', '/logos/neo-branco.svg'
 
 
@@ -15,7 +14,6 @@ def reverter(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('api', '0004_logos_svg_brancas'),
     ]

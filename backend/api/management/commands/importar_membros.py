@@ -3,6 +3,7 @@ import re
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -10,9 +11,17 @@ from api.models import Membro
 
 API_URL = 'https://neo.certi.org.br/api/proxy/users'
 
+PASTA_FOTOS_LOCAIS = settings.BASE_DIR.parent / 'frontend' / 'public' / 'membros'
+
+
+def foto_do_membro(usuario):
+    arquivo = PASTA_FOTOS_LOCAIS / f"{usuario['username'].lower()}.webp"
+    if arquivo.exists():
+        return f'/membros/{arquivo.name}'
+    return converter_foto(usuario)
+
 
 def converter_foto(usuario):
-    """Escolhe a melhor URL de foto disponível para usar direto em uma <img>."""
     if usuario.get('pictureUrl'):
         return usuario['pictureUrl']
 
@@ -20,7 +29,6 @@ def converter_foto(usuario):
     if not drive_url:
         return None
 
-    # Links do tipo ".../file/d/<ID>/view" não abrem em <img>; a miniatura abre.
     match = re.search(r'/file/d/([\w-]+)', drive_url)
     if match:
         return f'https://drive.google.com/thumbnail?id={match.group(1)}&sz=w400'
@@ -55,14 +63,14 @@ class Command(BaseCommand):
         criados = atualizados = 0
         with transaction.atomic():
             for usuario in usuarios:
-                # split/join remove espaços duplicados vindos da API
                 nome = ' '.join(f"{usuario['firstName']} {usuario['lastName']}".split())
                 _, criado = Membro.objects.update_or_create(
                     sigla=usuario['username'].upper(),
                     defaults={
                         'nome': nome[:120],
                         'email': usuario['email'].lower(),
-                        'foto_url': converter_foto(usuario),
+                        'foto_url': foto_do_membro(usuario),
+                        'cargo': ' '.join((usuario.get('role') or '').split())[:80],
                     },
                 )
                 if criado:

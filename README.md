@@ -10,13 +10,14 @@ Sistema web para acompanhar os projetos que o NEO realizou e está realizando co
 
 ## Funcionalidades
 
-- **Início:** números gerais, projetos em andamento, próximos projetos e EPs.
+- **Início:** números gerais, projetos em andamento, backlog (projetos em planejamento) e EPs.
 - **Empresas parceiras:** grade com a logo e a quantidade de projetos de cada EP; cadastro,
   edição e exclusão (uma EP com projetos não pode ser excluída).
 - **Projetos por EP:** ao clicar numa EP, lista os projetos do NEO com ela, com status e datas.
 - **Detalhes do projeto:** descrição, datas, duração e equipe; criar, editar e excluir projetos.
-  Ao criar, o nome é sugerido pela sequência da EP (ex.: depois do C157 vem o C158).
+  Ao criar, o nome é sugerido pela sequência da EP (ex.: depois do L027 vem o L028; sempre com 3 dígitos).
 - **Equipe:** adicionar membros ao projeto (com função e escopo), editar e remover.
+- **Documentos:** enviar arquivos do projeto (abertura, contrato, proposta, relatório, ata...), abrir, baixar e excluir.
 - **Membros:** lista com busca por nome ou sigla, perfil com os projetos de cada membro,
   cadastro, edição e exclusão.
 
@@ -70,7 +71,7 @@ para `http://127.0.0.1:8000` (ver `vite.config.js`), então o frontend funciona 
 
 ```powershell
 cd backend
-python manage.py test api      # 31 testes da API, models e comandos
+python manage.py test api      # 40 testes da API, models e comandos
 ```
 
 ```bash
@@ -92,7 +93,7 @@ empresas_parceiras 1 ──── * projetos 1 ──── * alocacoes * ──
 | `empresas_parceiras` | nome, logo_url | nome único |
 | `projetos` | nome, descricao, empresa, status, data_inicio, data_fim_prevista | status: planejamento, em andamento ou concluído; fim não pode ser antes do início |
 | `membros` | sigla, nome, email, foto_url | sigla com 3 letras maiúsculas e única; e-mail válido e único |
-| `alocacoes` | membro, projeto, funcao, escopo | excluir projeto ou membro remove as alocações |
+| `alocacoes` | membro, projeto, funcao, escopo | escopo: Web, Data Science, Business Intelligence, Visão Computacional ou AI; no máximo 3 membros por projeto; excluir projeto ou membro remove as alocações |
 
 ## API
 
@@ -104,6 +105,7 @@ Base: `http://127.0.0.1:8000/api/` (navegável pelo navegador, via Django REST F
 | Projetos | `/projetos/`, `/projetos/<id>/` | `?empresa=<id>`; `empresa_nome`, `empresa_logo_url`, `status_display` |
 | Membros | `/membros/`, `/membros/<id>/` | `total_projetos`; sigla e e-mail normalizados |
 | Alocações | `/alocacoes/`, `/alocacoes/<id>/` | `?projeto=<id>`, `?membro=<id>`; dados do membro, projeto e EP |
+| Documentos | `/documentos/`, `/documentos/<id>/` | `?projeto=<id>`; upload em `multipart/form-data` (campo `arquivo`, até 20 MB) |
 
 Todos aceitam `GET`, `POST`, `PUT`, `PATCH` e `DELETE`.
 
@@ -125,8 +127,8 @@ frontend/
 └── src/
     ├── App.jsx              rotas
     ├── index.css            tema escuro (cores em variáveis no :root)
-    ├── services/api.js      chamadas à API
-    ├── hooks/               useApi (carregar dados), useFormulario (formulários)
+    ├── api/useApi.js        Axios (baseURL do backend), funções CRUD e hook useApi
+    ├── hooks/               useFormulario (formulários)
     ├── components/          Layout, cards, Modal, Campo, Avatar...
     ├── pages/               uma página por tela
     └── utils/formatar.js    datas, duração, iniciais
@@ -138,6 +140,9 @@ docs/prints/                 imagens deste README
 
 - **Logos:** ficam em `frontend/public/logos/` e são cadastradas pelo caminho (ex.: `/logos/weg.svg`).
   Use SVG ou PNG com fundo transparente: o CSS deixa todas brancas para o tema escuro.
-- **Fotos dos membros:** links do Google Drive só aparecem se o arquivo estiver compartilhado com
-  "Qualquer pessoa com o link"; caso contrário, o site mostra as iniciais do nome.
+- **Fotos dos membros:** podem ficar em `frontend/public/membros/<sigla>.webp` (quadradas, 400×400) e
+  são cadastradas como `/membros/<sigla>.webp`; o `importar_membros` usa essas fotos automaticamente.
+  Links do Google Drive só aparecem se o arquivo estiver compartilhado com "Qualquer pessoa com o
+  link". Sem foto, o site mostra as iniciais do nome.
+- **Documentos enviados:** ficam em `backend/media/` e, como o banco, não vão para o Git.
 - **Banco de dados:** o `db.sqlite3` não vai para o Git. Cada pessoa gera o seu com os comandos acima.

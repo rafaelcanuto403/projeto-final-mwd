@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Campo from '../components/Campo.jsx'
 import { Carregando, Erro } from '../components/Estado.jsx'
-import { useApi } from '../hooks/useApi.js'
+import { api, useApi } from '../api/useApi.js'
 import { useFormulario } from '../hooks/useFormulario.js'
-import { api } from '../services/api.js'
 
 const STATUS = [
   ['planejamento', 'Planejamento'],
@@ -12,7 +11,6 @@ const STATUS = [
   ['concluido', 'Concluído'],
 ]
 
-// Próximo código da EP: inicial + (maior número já usado + 1). Ex.: C157 → C158
 async function sugerirNome(empresa) {
   const projetos = await api.listarProjetosDaEmpresa(empresa.id)
   const inicial = empresa.nome[0].toUpperCase()
@@ -20,10 +18,10 @@ async function sugerirNome(empresa) {
     .map((p) => p.nome.match(new RegExp(`^${inicial}(\\d+)$`, 'i'))?.[1])
     .filter(Boolean)
     .map(Number)
-  return `${inicial}${numeros.length ? Math.max(...numeros) + 1 : 1}`
+  const proximo = numeros.length ? Math.max(...numeros) + 1 : 1
+  return `${inicial}${String(proximo).padStart(3, '0')}`
 }
 
-// Valores iniciais de um projeto novo (início = hoje, no fuso local)
 function valoresDeNovoProjeto(empresaId) {
   const hoje = new Date()
   const doisDigitos = (n) => String(n).padStart(2, '0')
@@ -37,7 +35,6 @@ function valoresDeNovoProjeto(empresaId) {
   }
 }
 
-// Página usada para criar (/projetos/novo?empresa=ID) e editar (/projetos/:id/editar)
 export default function ProjetoFormPage() {
   const { id } = useParams()
   const [busca] = useSearchParams()
@@ -65,7 +62,6 @@ function ProjetoForm({ empresas, inicial, editando }) {
     descricao: inicial.descricao ?? '',
     data_fim_prevista: inicial.data_fim_prevista ?? '',
   })
-  // Enquanto o usuário não digitar um nome próprio, o nome acompanha a EP escolhida
   const [nomeAutomatico, setNomeAutomatico] = useState(!editando)
 
   useEffect(() => {
@@ -126,7 +122,7 @@ function ProjetoForm({ empresas, inicial, editando }) {
             nome="nome"
             erro={erros.nome}
             obrigatorio
-            dica={nomeAutomatico ? 'Sugerido pela sequência da EP. Pode alterar.' : undefined}
+            dica={nomeAutomatico ? 'Sugerido pela sequência da EP.' : undefined}
           >
             <input
               id="nome"
@@ -141,17 +137,6 @@ function ProjetoForm({ empresas, inicial, editando }) {
             />
           </Campo>
         </div>
-
-        <Campo rotulo="Descrição" nome="descricao" erro={erros.descricao}>
-          <textarea
-            id="descricao"
-            name="descricao"
-            rows={4}
-            maxLength={500}
-            value={valores.descricao}
-            onChange={alterar}
-          />
-        </Campo>
 
         <div className="formulario__linha formulario__linha--3">
           <Campo rotulo="Status" nome="status" erro={erros.status} obrigatorio>
@@ -178,6 +163,19 @@ function ProjetoForm({ empresas, inicial, editando }) {
               onChange={alterar}
             />
           </Campo>
+        </div>
+          
+        <div>
+          <Campo rotulo="Descrição" nome="descricao" erro={erros.descricao}>
+          <textarea
+            id="descricao"
+            name="descricao"
+            rows={4}
+            maxLength={500}
+            value={valores.descricao}
+            onChange={alterar}
+          />
+        </Campo>
         </div>
 
         <div className="formulario__acoes">

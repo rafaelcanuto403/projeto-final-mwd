@@ -5,14 +5,14 @@ export default function Layout() {
     <div className="app">
       <header className="topbar">
         <div className="container topbar__conteudo">
-          <NavLink to="/" className="marca">
+          <NavLink to="/" className="marca" aria-label="NEO — página inicial">
             <img src="/logos/neo.svg" alt="" className="marca__logo" />
-            <span>NEO</span>
+            <p>Mentes Brilhantes Crescem Juntas</p>
           </NavLink>
 
           <nav className="menu">
             <NavLink to="/" end className="menu__link">
-              Início
+              Home
             </NavLink>
             <NavLink to="/projetos" className="menu__link">
               Projetos

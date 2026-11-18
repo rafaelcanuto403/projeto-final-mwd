@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Alocacao, EmpresaParceira, Membro, Projeto
+from .models import Alocacao, Documento, EmpresaParceira, Membro, Projeto
 
 
 @admin.register(EmpresaParceira)
@@ -26,3 +26,10 @@ class ProjetoAdmin(admin.ModelAdmin):
 class AlocacaoAdmin(admin.ModelAdmin):
     list_display = ('membro', 'projeto', 'funcao', 'escopo')
     list_filter = ('projeto',)
+
+
+@admin.register(Documento)
+class DocumentoAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'tipo', 'projeto', 'enviado_em')
+    list_filter = ('tipo', 'projeto')
+    search_fields = ('titulo',)

@@ -18,18 +18,15 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<InicioPage />} />
 
-          {/* Empresas parceiras */}
           <Route path="projetos" element={<EmpresasPage />} />
           <Route path="projetos/empresa/nova" element={<EmpresaFormPage />} />
           <Route path="projetos/empresa/:id" element={<EmpresaProjetosPage />} />
           <Route path="projetos/empresa/:id/editar" element={<EmpresaFormPage />} />
 
-          {/* Projetos */}
           <Route path="projetos/novo" element={<ProjetoFormPage />} />
           <Route path="projetos/:id" element={<ProjetoPage />} />
           <Route path="projetos/:id/editar" element={<ProjetoFormPage />} />
 
-          {/* Membros */}
           <Route path="membros" element={<MembrosPage />} />
           <Route path="membros/novo" element={<MembroFormPage />} />
           <Route path="membros/:id" element={<MembroPage />} />

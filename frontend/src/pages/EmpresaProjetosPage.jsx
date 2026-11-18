@@ -2,16 +2,13 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { useApi } from '../hooks/useApi.js'
-import { api } from '../services/api.js'
-import { formatarData } from '../utils/formatar.js'
+import { api, useApi } from '../api/useApi.js'
 
 export default function EmpresaProjetosPage() {
   const { id } = useParams()
   const navegar = useNavigate()
   const [erroAcao, setErroAcao] = useState(null)
 
-  // Busca empresa e projetos em paralelo
   const { dados, carregando, erro } = useApi(
     () => Promise.all([api.buscarEmpresa(id), api.listarProjetosDaEmpresa(id)]),
     [id],
@@ -24,7 +21,6 @@ export default function EmpresaProjetosPage() {
       await api.excluirEmpresa(empresa.id)
       navegar('/projetos')
     } catch (e) {
-      // ex.: "Não é possível excluir uma empresa que possui projetos vinculados."
       setErroAcao(e.message)
     }
   }
@@ -77,9 +73,6 @@ export default function EmpresaProjetosPage() {
                   <StatusBadge status={projeto.status} texto={projeto.status_display} />
                 </div>
                 {projeto.descricao && <p className="texto-suave">{projeto.descricao}</p>}
-                <p className="projeto-card__datas">
-                  {formatarData(projeto.data_inicio)} → {formatarData(projeto.data_fim_prevista)}
-                </p>
               </Link>
             ))}
           </div>

@@ -1,7 +1,5 @@
 from django.db import migrations
 
-# Carga inicial das empresas parceiras atuais.
-# As logos ficam em frontend/public/logos/ e são servidas pelo Vite na raiz ("/logos/...").
 EMPRESAS = [
     ('WEG', '/logos/weg.jpg'),
     ('Embraco/Nidec', '/logos/embraco-nidec.webp'),
@@ -23,7 +21,6 @@ def remover_empresas(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('api', '0002_alter_membro_email_alter_membro_sigla'),
     ]

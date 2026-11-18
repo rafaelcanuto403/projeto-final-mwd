@@ -27,3 +27,9 @@ Thumbs.db
 
 # Arquivos fora do controle de versão
 Tabelas Relacionais.pdf
+
+# Documentos enviados pelos usuários (ficam só na máquina de cada um)
+backend/media/
+
+# Fotos originais dos membros (pesadas; no site ficam as versões otimizadas em frontend/public/membros)
+fotos-originais/

@@ -2,40 +2,41 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AlocacaoForm from '../components/AlocacaoForm.jsx'
 import Avatar from '../components/Avatar.jsx'
+import DocumentoForm from '../components/DocumentoForm.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import Modal from '../components/Modal.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { useApi } from '../hooks/useApi.js'
-import { api } from '../services/api.js'
-import { formatarData, formatarDuracao } from '../utils/formatar.js'
+import { api, useApi } from '../api/useApi.js'
+import { formatarData, formatarDuracao, formatarTamanho } from '../utils/formatar.js'
+
+const MAX_MEMBROS = 3
 
 export default function ProjetoPage() {
   const { id } = useParams()
   const navegar = useNavigate()
-  // null = modal fechado; { alocacao: null } = adicionar; { alocacao: {...} } = editar
   const [modal, setModal] = useState(null)
   const [erroAcao, setErroAcao] = useState(null)
+  const [enviandoDocumento, setEnviandoDocumento] = useState(false)
 
-  // Projeto, equipe e membros em paralelo; a empresa (para a logo) vem em seguida
   const { dados, carregando, erro, recarregar } = useApi(async () => {
-    const [projeto, alocacoes, membros] = await Promise.all([
+    const [projeto, alocacoes, membros, documentos] = await Promise.all([
       api.buscarProjeto(id),
       api.listarAlocacoesDoProjeto(id),
       api.listarMembros(),
+      api.listarDocumentosDoProjeto(id),
     ])
     const empresa = await api.buscarEmpresa(projeto.empresa)
-    return { projeto, alocacoes, membros, empresa }
+    return { projeto, alocacoes, membros, documentos, empresa }
   }, [id])
 
   if (carregando) return <Carregando />
   if (erro) return <Erro mensagem={erro} />
 
-  const { projeto, alocacoes, membros, empresa } = dados
+  const { projeto, alocacoes, membros, documentos, empresa } = dados
   const duracao = formatarDuracao(projeto.data_inicio, projeto.data_fim_prevista)
 
-  // Ao adicionar, só aparecem membros que ainda não estão na equipe
+  const equipeCompleta = alocacoes.length >= MAX_MEMBROS
   const idsNaEquipe = new Set(alocacoes.map((a) => a.membro))
-  const membrosDisponiveis = modal?.alocacao ? membros : membros.filter((m) => !idsNaEquipe.has(m.id))
 
   async function excluirProjeto() {
     const confirmado = window.confirm(
@@ -45,6 +46,16 @@ export default function ProjetoPage() {
     try {
       await api.excluirProjeto(projeto.id)
       navegar(`/projetos/empresa/${empresa.id}`)
+    } catch (e) {
+      setErroAcao(e.message)
+    }
+  }
+
+  async function excluirDocumento(documento) {
+    if (!window.confirm(`Excluir o documento "${documento.titulo}"? O arquivo será apagado.`)) return
+    try {
+      await api.excluirDocumento(documento.id)
+      recarregar()
     } catch (e) {
       setErroAcao(e.message)
     }
@@ -115,9 +126,20 @@ export default function ProjetoPage() {
 
       <div className="secao-cabecalho">
         <h2 className="titulo-secao">Equipe</h2>
-        <button type="button" className="botao botao--primario" onClick={() => setModal({ alocacao: null })}>
-          + Adicionar membro
-        </button>
+        <div className="acoes">
+          <button type="button" className="botao botao--fantasma" onClick={() => setEnviandoDocumento(true)}>
+            + Adicionar documento
+          </button>
+          <button
+            type="button"
+            className="botao botao--primario"
+            onClick={() => setModal({ alocacao: null })}
+            disabled={equipeCompleta}
+            title={equipeCompleta ? `A equipe já tem ${MAX_MEMBROS} membros, o máximo por projeto` : undefined}
+          >
+            + Adicionar membro
+          </button>
+        </div>
       </div>
 
       {alocacoes.length === 0 ? (
@@ -162,6 +184,64 @@ export default function ProjetoPage() {
         </div>
       )}
 
+      <h2 className="titulo-secao secao-documentos">Documentos</h2>
+      {documentos.length === 0 ? (
+        <Vazio texto="Nenhum documento enviado." />
+      ) : (
+        <ul className="lista-documentos">
+          {documentos.map((documento) => {
+            const extensao = documento.nome_arquivo?.split('.').pop() ?? ''
+            return (
+              <li key={documento.id} className="documento">
+                <span className="documento__extensao">{extensao}</span>
+                <div className="documento__info">
+                  <a href={documento.arquivo_url} target="_blank" rel="noreferrer" className="documento__titulo">
+                    {documento.titulo}
+                  </a>
+                  <span>
+                    {documento.tipo_display} · enviado em {formatarData(documento.enviado_em.slice(0, 10))}
+                    {documento.tamanho != null && ` · ${formatarTamanho(documento.tamanho)}`}
+                  </span>
+                </div>
+                <div className="documento__acoes">
+                  <a
+                    href={documento.arquivo_url}
+                    download={documento.nome_arquivo}
+                    className="botao botao--fantasma botao--pequeno"
+                  >
+                    Baixar
+                  </a>
+                  <button
+                    type="button"
+                    className="botao botao--icone botao--icone-perigo"
+                    onClick={() => excluirDocumento(documento)}
+                    aria-label={`Excluir ${documento.titulo}`}
+                    title="Excluir documento"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      <Modal
+        aberto={enviandoDocumento}
+        titulo={`Adicionar documento ao ${projeto.nome}`}
+        aoFechar={() => setEnviandoDocumento(false)}
+      >
+        <DocumentoForm
+          projetoId={projeto.id}
+          aoCancelar={() => setEnviandoDocumento(false)}
+          aoSalvar={() => {
+            setEnviandoDocumento(false)
+            recarregar()
+          }}
+        />
+      </Modal>
+
       <Modal
         aberto={modal !== null}
         titulo={modal?.alocacao ? `Editar ${modal.alocacao.membro_nome}` : `Adicionar membro ao ${projeto.nome}`}
@@ -170,7 +250,8 @@ export default function ProjetoPage() {
         <AlocacaoForm
           projetoId={projeto.id}
           alocacao={modal?.alocacao ?? null}
-          membros={membrosDisponiveis}
+          membros={membros}
+          idsNaEquipe={idsNaEquipe}
           aoCancelar={() => setModal(null)}
           aoSalvar={() => {
             setModal(null)

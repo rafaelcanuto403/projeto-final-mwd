@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
-import EmpresaCard from '../components/EmpresaCard.jsx'
+import EmpresaFaixa from '../components/EmpresaFaixa.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
-import { useApi } from '../hooks/useApi.js'
-import { api } from '../services/api.js'
+import { api, useApi } from '../api/useApi.js'
 
 export default function EmpresasPage() {
-  const { dados: empresas, carregando, erro } = useApi(api.listarEmpresas)
+  const { dados, carregando, erro } = useApi(() => Promise.all([api.listarEmpresas(), api.listarProjetos()]))
+  const [empresas, projetos] = dados ?? []
 
   return (
     <section>
@@ -26,9 +26,13 @@ export default function EmpresasPage() {
       {empresas?.length === 0 && <Vazio texto="Nenhuma empresa parceira cadastrada." />}
 
       {empresas?.length > 0 && (
-        <div className="grade-empresas">
+        <div className="pilha-empresas">
           {empresas.map((empresa) => (
-            <EmpresaCard key={empresa.id} empresa={empresa} />
+            <EmpresaFaixa
+              key={empresa.id}
+              empresa={empresa}
+              projetos={projetos.filter((p) => p.empresa === empresa.id)}
+            />
           ))}
         </div>
       )}

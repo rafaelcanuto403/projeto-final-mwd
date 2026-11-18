@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { iniciais } from '../utils/formatar.js'
 
-// Foto redonda do membro. Se não houver foto ou ela não carregar
-// (ex.: arquivo privado no Google Drive), mostra as iniciais do nome.
 export default function Avatar({ nome, fotoUrl, tamanho = 72 }) {
   const [falhou, setFalhou] = useState(false)
   const estilo = { width: tamanho, height: tamanho, fontSize: tamanho * 0.36 }

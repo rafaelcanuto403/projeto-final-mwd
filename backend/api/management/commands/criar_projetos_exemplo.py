@@ -4,17 +4,14 @@ from datetime import date, timedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from api.models import Alocacao, EmpresaParceira, Membro, Projeto
+from api.models import MAX_MEMBROS_POR_PROJETO, Alocacao, EmpresaParceira, Membro, Projeto
 
-# Dados FICTÍCIOS para desenvolver o frontend.
-# Nome do projeto = inicial da EP + número sequencial (ex.: C154, C155...).
-# EP: (quantidade de projetos de exemplo, número do primeiro projeto)
 QUANTIDADE_POR_EMPRESA = {
-    'CERTI': (6, 152),          # C152 a C157: o projeto atual da CERTI é o C157
-    'WEG': (5, 1),
-    'Embraco/Nidec': (4, 143),  # a Embraco/Nidec já está no E142
-    'Landis+Gyr': (3, 1),
-    'NEO': (2, 103),            # o NEO já está no N102
+    'CERTI': (6, 152),
+    'WEG': (5, 146),
+    'Embraco/Nidec': (4, 140),
+    'Landis+Gyr': (3, 25),
+    'NEO Empresarial': (2, 103),
 }
 
 DESCRICOES = [
@@ -29,13 +26,14 @@ DESCRICOES = [
 ]
 
 
-# Equipe fictícia: 1 gerente + 2 a 4 executores por projeto
-ESCOPOS = ['Software', 'Hardware', 'Dados', 'Processos', 'Design', 'Pesquisa']
+SIGLAS_FORA_DOS_PROJETOS = {'VCE', 'ADU'}
+
+ESCOPOS = Alocacao.Escopo.values
 
 
 class Command(BaseCommand):
     help = (
-        'Cria projetos FICTÍCIOS (W1, C1, ...) e aloca membros já cadastrados neles, '
+        'Cria projetos FICTÍCIOS (W001, L027, ...) e aloca membros já cadastrados neles, '
         'para desenvolvimento do frontend.'
     )
 
@@ -47,7 +45,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        rng = random.Random(42)  # sempre gera os mesmos dados
+        rng = random.Random(42)
         hoje = date.today()
 
         with transaction.atomic():
@@ -59,7 +57,9 @@ class Command(BaseCommand):
                     'Já existem projetos no banco. Use --limpar para apagá-los e recriar os exemplos.'
                 )
 
-            membros = list(Membro.objects.order_by('sigla'))
+            membros = list(
+                Membro.objects.exclude(sigla__in=SIGLAS_FORA_DOS_PROJETOS).order_by('sigla')
+            )
             if len(membros) < 3:
                 self.stdout.write(self.style.WARNING(
                     'Poucos membros cadastrados: rode "importar_membros" antes para criar as alocações.'
@@ -74,10 +74,8 @@ class Command(BaseCommand):
 
                 inicial = nome_empresa[0].upper()
                 for numero in range(1, quantidade + 1):
-                    # Projetos mais antigos tendem a estar concluídos; os mais novos, em andamento/planejamento
                     inicio = hoje - timedelta(days=(quantidade - numero) * 120 + rng.randint(10, 60))
                     if numero == quantidade and quantidade >= 4:
-                        # último projeto das EPs maiores ainda vai começar (status "planejamento")
                         inicio = hoje + timedelta(days=rng.randint(15, 45))
                     fim = inicio + timedelta(days=rng.choice([90, 120, 180]))
                     if fim < hoje:
@@ -88,7 +86,7 @@ class Command(BaseCommand):
                         status = Projeto.Status.PLANEJAMENTO
 
                     projeto = Projeto.objects.create(
-                        nome=f'{inicial}{primeiro_numero + numero - 1}',
+                        nome=f'{inicial}{primeiro_numero + numero - 1:03d}',
                         descricao=rng.choice(DESCRICOES),
                         empresa=empresa,
                         status=status,
@@ -97,14 +95,14 @@ class Command(BaseCommand):
                     )
                     criados += 1
 
-                    if len(membros) >= 3:
-                        equipe = rng.sample(membros, k=min(len(membros), rng.randint(3, 5)))
+                    if len(membros) >= MAX_MEMBROS_POR_PROJETO:
+                        equipe = rng.sample(membros, k=min(len(membros), rng.randint(2, MAX_MEMBROS_POR_PROJETO)))
                         for indice, membro in enumerate(equipe):
                             Alocacao.objects.create(
                                 membro=membro,
                                 projeto=projeto,
                                 funcao='Gerente de projeto' if indice == 0 else 'Executor',
-                                escopo='Gestão' if indice == 0 else rng.choice(ESCOPOS),
+                                escopo=rng.choice(ESCOPOS),
                             )
                             alocacoes += 1
 

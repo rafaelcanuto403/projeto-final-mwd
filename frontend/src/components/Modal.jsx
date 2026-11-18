@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react'
 
-// Janela sobreposta usando o <dialog> nativo do navegador
-// (já cuida de foco, tecla Esc e fundo escurecido).
 export default function Modal({ aberto, titulo, aoFechar, children }) {
   const dialogo = useRef(null)
 
@@ -16,7 +14,6 @@ export default function Modal({ aberto, titulo, aoFechar, children }) {
       ref={dialogo}
       className="modal"
       onClose={aoFechar}
-      // clique no fundo escuro (fora da caixa) fecha
       onClick={(evento) => evento.target === dialogo.current && aoFechar()}
     >
       <div className="modal__caixa">
