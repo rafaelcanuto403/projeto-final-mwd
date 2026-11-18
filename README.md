@@ -31,7 +31,7 @@ Sistema web para acompanhar os projetos que o NEO realizou e está realizando co
 |---|---|
 | ![Detalhes do projeto](docs/prints/04-detalhes-do-projeto.png) | ![Novo projeto](docs/prints/07-novo-projeto.png) |
 
-| Adicionar membro (por capacidade) | Adicionar documento |
+| Adicionar membro (por capacidade produtiva) | Adicionar documento |
 |---|---|
 | ![Adicionar membro](docs/prints/08-adicionar-membro.png) | ![Adicionar documento](docs/prints/09-adicionar-documento.png) |
 
