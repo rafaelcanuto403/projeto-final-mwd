@@ -1,25 +1,24 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Campo from '../components/Campo.jsx'
 import { Carregando, Erro } from '../components/Estado.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { useQuery } from '@tanstack/react-query'
+import { consultas, useSalvarEmpresa } from '../api/queries.js'
 import { useFormulario } from '../hooks/useFormulario.js'
 
 export default function EmpresaFormPage() {
   const { id } = useParams()
   const editando = Boolean(id)
-  const { dados, carregando, erro } = useApi(
-    () => (editando ? api.buscarEmpresa(id) : Promise.resolve(null)),
-    [id],
-  )
+  const { data, isPending, error } = useQuery({ ...consultas.empresa(id), enabled: editando })
 
-  if (carregando) return <Carregando />
-  if (erro) return <Erro mensagem={erro} />
+  if (editando && isPending) return <Carregando />
+  if (error) return <Erro mensagem={error.message} />
 
-  return <EmpresaForm inicial={dados ?? { nome: '', logo_url: '' }} editando={editando} />
+  return <EmpresaForm inicial={editando ? data : { nome: '', logo_url: '' }} editando={editando} />
 }
 
 function EmpresaForm({ inicial, editando }) {
   const navegar = useNavigate()
+  const salvamento = useSalvarEmpresa()
   const { valores, alterar, erros, erroGeral, enviando, enviar } = useFormulario({
     nome: inicial.nome,
     logo_url: inicial.logo_url ?? '',
@@ -29,9 +28,7 @@ function EmpresaForm({ inicial, editando }) {
   async function salvar(evento) {
     evento.preventDefault()
     const corpo = { nome: valores.nome.trim(), logo_url: valores.logo_url.trim() || null }
-    const salva = await enviar(() =>
-      editando ? api.atualizarEmpresa(inicial.id, corpo) : api.criarEmpresa(corpo),
-    )
+    const salva = await enviar(() => salvamento.mutateAsync({ id: editando ? inicial.id : null, dados: corpo }))
     if (salva) navegar(`/projetos/empresa/${salva.id}`)
   }
 

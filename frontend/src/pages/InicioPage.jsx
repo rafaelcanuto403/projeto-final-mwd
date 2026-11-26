@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom'
 import EmpresaCard from '../components/EmpresaCard.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
+import DescricaoProjeto from '../components/DescricaoProjeto.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { consultas, useConsultas } from '../api/queries.js'
 
 export default function InicioPage() {
-  const { dados, carregando, erro } = useApi(() =>
-    Promise.all([api.listarEmpresas(), api.listarProjetos(), api.listarMembros()]),
-  )
+  const { dados, carregando, erro } = useConsultas([consultas.empresas(), consultas.projetos(), consultas.membros()])
 
   if (carregando) return <Carregando />
   if (erro) return <Erro mensagem={erro} />
@@ -89,7 +88,7 @@ function ListaResumo({ titulo, projetos, vazio }) {
                 {projeto.empresa_logo_url && <img src={projeto.empresa_logo_url} alt="" className="logo-branca" />}
                 <span>{projeto.empresa_nome}</span>
               </div>
-              {projeto.descricao && <p className="texto-suave">{projeto.descricao}</p>}
+              <DescricaoProjeto descricao={projeto.descricao} className="texto-suave" />
             </Link>
           ))}
         </div>

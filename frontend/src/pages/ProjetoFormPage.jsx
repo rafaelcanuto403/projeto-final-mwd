@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Campo from '../components/Campo.jsx'
 import { Carregando, Erro } from '../components/Estado.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { useQueryClient } from '@tanstack/react-query'
+import { consultas, useConsultas, useSalvarProjeto } from '../api/queries.js'
+import { SemPermissao } from '../auth/Rotas.jsx'
 import { useFormulario } from '../hooks/useFormulario.js'
 
 const STATUS = [
@@ -11,15 +13,18 @@ const STATUS = [
   ['concluido', 'Concluído'],
 ]
 
-async function sugerirNome(empresa) {
-  const projetos = await api.listarProjetosDaEmpresa(empresa.id)
-  const inicial = empresa.nome[0].toUpperCase()
-  const numeros = projetos
-    .map((p) => p.nome.match(new RegExp(`^${inicial}(\\d+)$`, 'i'))?.[1])
+async function sugerirNome(queryClient, empresa) {
+  // staleTime 0: a sugestão do próximo número sempre parte da lista mais recente da empresa
+  // (o resultado ainda alimenta o cache da página da empresa).
+  const projetos = await queryClient.fetchQuery({ ...consultas.projetosDaEmpresa(empresa.id), staleTime: 0 })
+  const nomes = projetos
+    .map((p) => p.nome.match(/^([A-Z]+)(\d+)$/i))
     .filter(Boolean)
-    .map(Number)
-  const proximo = numeros.length ? Math.max(...numeros) + 1 : 1
-  return `${inicial}${String(proximo).padStart(3, '0')}`
+    .map(([, letra, numero]) => ({ letra: letra.toUpperCase(), numero: Number(numero) }))
+  const ultimo = nomes.reduce((maior, atual) => (!maior || atual.numero > maior.numero ? atual : maior), null)
+  const letra = ultimo?.letra ?? empresa.nome[0].toUpperCase()
+  const proximo = ultimo ? ultimo.numero + 1 : 1
+  return `${letra}${String(proximo).padStart(3, '0')}`
 }
 
 function valoresDeNovoProjeto(empresaId) {
@@ -40,15 +45,15 @@ export default function ProjetoFormPage() {
   const [busca] = useSearchParams()
   const editando = Boolean(id)
 
-  const { dados, carregando, erro } = useApi(
-    () => Promise.all([api.listarEmpresas(), editando ? api.buscarProjeto(id) : null]),
-    [id],
+  const { dados, carregando, erro } = useConsultas(
+    editando ? [consultas.empresas(), consultas.projeto(id)] : [consultas.empresas()],
   )
 
   if (carregando) return <Carregando />
   if (erro) return <Erro mensagem={erro} />
 
-  const [empresas, projeto] = dados
+  const [empresas, projeto = null] = dados
+  if (projeto && !projeto.permissoes.editar) return <SemPermissao />
   const inicial = projeto ?? valoresDeNovoProjeto(busca.get('empresa'))
 
   return <ProjetoForm empresas={empresas} inicial={inicial} editando={editando} />
@@ -56,6 +61,8 @@ export default function ProjetoFormPage() {
 
 function ProjetoForm({ empresas, inicial, editando }) {
   const navegar = useNavigate()
+  const queryClient = useQueryClient()
+  const salvamento = useSalvarProjeto()
   const { valores, setValores, alterar, erros, erroGeral, enviando, enviar } = useFormulario({
     ...inicial,
     empresa: String(inicial.empresa ?? ''),
@@ -69,11 +76,13 @@ function ProjetoForm({ empresas, inicial, editando }) {
     const empresa = empresas.find((e) => String(e.id) === valores.empresa)
     if (!empresa) return
     let ativo = true
-    sugerirNome(empresa).then((nome) => ativo && setValores((v) => ({ ...v, nome })))
+    sugerirNome(queryClient, empresa)
+      .then((nome) => ativo && setValores((v) => ({ ...v, nome })))
+      .catch(() => {}) // sem sugestão: a pessoa digita o nome
     return () => {
       ativo = false
     }
-  }, [valores.empresa, nomeAutomatico, empresas, setValores])
+  }, [valores.empresa, nomeAutomatico, empresas, setValores, queryClient])
 
   const voltarPara = editando
     ? `/projetos/${inicial.id}`
@@ -89,9 +98,7 @@ function ProjetoForm({ empresas, inicial, editando }) {
       descricao: valores.descricao.trim() || null,
       data_fim_prevista: valores.data_fim_prevista || null,
     }
-    const salvo = await enviar(() =>
-      editando ? api.atualizarProjeto(inicial.id, corpo) : api.criarProjeto(corpo),
-    )
+    const salvo = await enviar(() => salvamento.mutateAsync({ id: editando ? inicial.id : null, dados: corpo }))
     if (salvo) navegar(`/projetos/${salvo.id}`)
   }
 

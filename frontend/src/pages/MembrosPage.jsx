@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { useQuery } from '@tanstack/react-query'
+import { consultas } from '../api/queries.js'
+import { usePode } from '../auth/useAuth.js'
 
 const normalizar = (texto) =>
   texto
@@ -11,8 +13,10 @@ const normalizar = (texto) =>
     .toLowerCase()
 
 export default function MembrosPage() {
-  const { dados: membros, carregando, erro } = useApi(api.listarMembros)
+  const { data: membros, isPending: carregando, error } = useQuery(consultas.membros())
+  const erro = error?.message
   const [busca, setBusca] = useState('')
+  const pode = usePode()
 
   const termo = normalizar(busca.trim())
   const filtrados = (membros ?? []).filter(
@@ -32,9 +36,11 @@ export default function MembrosPage() {
             onChange={(e) => setBusca(e.target.value)}
             aria-label="Buscar membros"
           />
-          <Link to="/membros/novo" className="botao botao--primario">
-            + Novo membro
-          </Link>
+          {pode('membro', 'criar') && (
+            <Link to="/membros/novo" className="botao botao--primario">
+              + Novo membro
+            </Link>
+          )}
         </div>
       </div>
 

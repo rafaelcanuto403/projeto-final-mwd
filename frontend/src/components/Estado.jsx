@@ -5,7 +5,13 @@ export function Carregando() {
 export function Erro({ mensagem }) {
   return (
     <p className="estado estado--erro">
-      {mensagem} Verifique se o backend está rodando em <code>127.0.0.1:8000</code>.
+      {mensagem}
+      {mensagem?.includes('conectar') && (
+        <>
+          {' '}
+          Verifique se o backend está rodando em <code>127.0.0.1:8000</code>.
+        </>
+      )}
     </p>
   )
 }

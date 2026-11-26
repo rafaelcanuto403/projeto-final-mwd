@@ -1,13 +1,18 @@
 import Campo from './Campo.jsx'
 import ConsultaAlocacoes from './ConsultaAlocacoes.jsx'
 import { useFormulario } from '../hooks/useFormulario.js'
-import { api } from '../api/useApi.js'
+import { useSalvarAlocacao } from '../api/queries.js'
 
-const FUNCOES = ['Gerente de projeto', 'Executor']
+// Mesmas listas do backend (Alocacao.Funcao e Alocacao.Escopo em api/models.py).
+const GERENTE = 'Gerente de projeto'
+const FUNCOES = [GERENTE, 'Executor']
 const ESCOPOS = ['Web', 'Data Science', 'Business Intelligence', 'Visão Computacional', 'AI']
 
-export default function AlocacaoForm({ projetoId, alocacao, membros, idsNaEquipe, aoSalvar, aoCancelar }) {
+export default function AlocacaoForm({ projetoId, alocacao, alocacoes, membros, idsNaEquipe, aoSalvar, aoCancelar }) {
   const editando = Boolean(alocacao)
+  const salvamento = useSalvarAlocacao()
+  // Um gerente por projeto: a opção fica bloqueada se outra pessoa já for a gerente.
+  const outroGerente = alocacoes.find((a) => a.funcao === GERENTE && a.id !== alocacao?.id)
   const { valores, alterar, erros, erroGeral, enviando, enviar } = useFormulario({
     membro: alocacao ? String(alocacao.membro) : '',
     funcao: alocacao?.funcao ?? '',
@@ -19,12 +24,10 @@ export default function AlocacaoForm({ projetoId, alocacao, membros, idsNaEquipe
     const corpo = {
       membro: Number(valores.membro) || null,
       projeto: projetoId,
-      funcao: valores.funcao.trim(),
+      funcao: valores.funcao,
       escopo: valores.escopo,
     }
-    const salva = await enviar(() =>
-      editando ? api.atualizarAlocacao(alocacao.id, corpo) : api.criarAlocacao(corpo),
-    )
+    const salva = await enviar(() => salvamento.mutateAsync({ id: editando ? alocacao.id : null, dados: corpo }))
     if (salva) aoSalvar()
   }
 
@@ -58,8 +61,25 @@ export default function AlocacaoForm({ projetoId, alocacao, membros, idsNaEquipe
       )}
 
       <div className="formulario__linha">
-        <Campo rotulo="Função" nome="funcao" erro={erros.funcao} obrigatorio>
-          <input id="funcao" name="funcao" list="lista-funcoes" value={valores.funcao} maxLength={60} onChange={alterar} />
+        <Campo
+          rotulo="Função"
+          nome="funcao"
+          erro={erros.funcao}
+          obrigatorio
+          dica={
+            outroGerente
+              ? `${outroGerente.membro_nome} já é o gerente deste projeto. Mude a função dele para Executor antes.`
+              : 'O gerente de projeto edita os dados do projeto e os documentos.'
+          }
+        >
+          <select id="funcao" name="funcao" value={valores.funcao} onChange={alterar}>
+            <option value="">Selecione...</option>
+            {FUNCOES.map((funcao) => (
+              <option key={funcao} value={funcao} disabled={funcao === GERENTE && Boolean(outroGerente)}>
+                {funcao}
+              </option>
+            ))}
+          </select>
         </Campo>
         <Campo rotulo="Escopo" nome="escopo" erro={erros.escopo} obrigatorio>
           <select id="escopo" name="escopo" value={valores.escopo} onChange={alterar}>
@@ -72,12 +92,6 @@ export default function AlocacaoForm({ projetoId, alocacao, membros, idsNaEquipe
           </select>
         </Campo>
       </div>
-
-      <datalist id="lista-funcoes">
-        {FUNCOES.map((f) => (
-          <option key={f} value={f} />
-        ))}
-      </datalist>
 
       <div className="formulario__acoes">
         <button type="button" className="botao botao--fantasma" onClick={aoCancelar}>

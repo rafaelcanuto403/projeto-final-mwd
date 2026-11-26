@@ -1,6 +1,7 @@
 import Avatar from './Avatar.jsx'
 import { Carregando, Erro } from './Estado.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { useQuery } from '@tanstack/react-query'
+import { consultas } from '../api/queries.js'
 
 function contarPorMembro(alocacoes, status) {
   const projetosPorMembro = new Map()
@@ -14,7 +15,8 @@ function contarPorMembro(alocacoes, status) {
 }
 
 export default function ConsultaAlocacoes({ membros, idsNaEquipe, selecionado, aoSelecionar }) {
-  const { dados: alocacoes, carregando, erro } = useApi(() => api.listarAlocacoes(), [])
+  const { data: alocacoes, isPending: carregando, error } = useQuery(consultas.alocacoes())
+  const erro = error?.message
 
   if (carregando) return <Carregando />
   if (erro) return <Erro mensagem={erro} />

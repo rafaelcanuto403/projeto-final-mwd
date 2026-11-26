@@ -1,24 +1,25 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
+import DescricaoProjeto from '../components/DescricaoProjeto.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { consultas, useConsultas, useExcluirEmpresa } from '../api/queries.js'
+import { usePode } from '../auth/useAuth.js'
 
 export default function EmpresaProjetosPage() {
   const { id } = useParams()
   const navegar = useNavigate()
+  const pode = usePode()
   const [erroAcao, setErroAcao] = useState(null)
+  const exclusao = useExcluirEmpresa()
 
-  const { dados, carregando, erro } = useApi(
-    () => Promise.all([api.buscarEmpresa(id), api.listarProjetosDaEmpresa(id)]),
-    [id],
-  )
-  const [empresa, projetos] = dados ?? []
+  const { dados, carregando, erro } = useConsultas([consultas.empresa(id), consultas.projetosDaEmpresa(id)])
+  const [empresa, projetos] = dados
 
   async function excluirEmpresa() {
     if (!window.confirm(`Excluir a empresa ${empresa.nome}? Esta ação não pode ser desfeita.`)) return
     try {
-      await api.excluirEmpresa(empresa.id)
+      await exclusao.mutateAsync(empresa.id)
       navegar('/projetos')
     } catch (e) {
       setErroAcao(e.message)
@@ -51,15 +52,21 @@ export default function EmpresaProjetosPage() {
             </div>
 
             <div className="acoes acoes--direita">
-              <Link to={`/projetos/empresa/${empresa.id}/editar`} className="botao botao--fantasma">
-                Editar
-              </Link>
-              <button type="button" className="botao botao--perigo" onClick={excluirEmpresa}>
-                Excluir
-              </button>
-              <Link to={`/projetos/novo?empresa=${empresa.id}`} className="botao botao--primario">
-                + Novo projeto
-              </Link>
+              {pode('empresa', 'editar') && (
+                <Link to={`/projetos/empresa/${empresa.id}/editar`} className="botao botao--fantasma">
+                  Editar
+                </Link>
+              )}
+              {pode('empresa', 'excluir') && (
+                <button type="button" className="botao botao--perigo" onClick={excluirEmpresa}>
+                  Excluir
+                </button>
+              )}
+              {pode('projeto', 'criar') && (
+                <Link to={`/projetos/novo?empresa=${empresa.id}`} className="botao botao--primario">
+                  + Novo projeto
+                </Link>
+              )}
             </div>
           </header>
 
@@ -72,7 +79,7 @@ export default function EmpresaProjetosPage() {
                   <h3>{projeto.nome}</h3>
                   <StatusBadge status={projeto.status} texto={projeto.status_display} />
                 </div>
-                {projeto.descricao && <p className="texto-suave">{projeto.descricao}</p>}
+                <DescricaoProjeto descricao={projeto.descricao} className="texto-suave" />
               </Link>
             ))}
           </div>

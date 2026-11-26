@@ -1,23 +1,29 @@
 import { Link } from 'react-router-dom'
 import EmpresaFaixa from '../components/EmpresaFaixa.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { consultas, useConsultas } from '../api/queries.js'
+import { usePode } from '../auth/useAuth.js'
 
 export default function EmpresasPage() {
-  const { dados, carregando, erro } = useApi(() => Promise.all([api.listarEmpresas(), api.listarProjetos()]))
-  const [empresas, projetos] = dados ?? []
+  const pode = usePode()
+  const { dados, carregando, erro } = useConsultas([consultas.empresas(), consultas.projetos()])
+  const [empresas, projetos] = dados
 
   return (
     <section>
       <div className="secao-cabecalho">
         <h2 className="titulo-secao">Empresas parceiras</h2>
         <div className="acoes">
-          <Link to="/projetos/empresa/nova" className="botao botao--fantasma">
-            + Nova empresa
-          </Link>
-          <Link to="/projetos/novo" className="botao botao--primario">
-            + Novo projeto
-          </Link>
+          {pode('empresa', 'criar') && (
+            <Link to="/projetos/empresa/nova" className="botao botao--fantasma">
+              + Nova empresa
+            </Link>
+          )}
+          {pode('projeto', 'criar') && (
+            <Link to="/projetos/novo" className="botao botao--primario">
+              + Novo projeto
+            </Link>
+          )}
         </div>
       </div>
 

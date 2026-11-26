@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from api.models import Membro
+from api.serializers import passar_cargo
 
 API_URL = 'https://neo.certi.org.br/api/proxy/users'
 
@@ -64,13 +65,17 @@ class Command(BaseCommand):
         with transaction.atomic():
             for usuario in usuarios:
                 nome = ' '.join(f"{usuario['firstName']} {usuario['lastName']}".split())
+                sigla = usuario['username'].upper()
+                cargo = ' '.join((usuario.get('role') or '').split())[:80]
+                # Troca de semestre: quem ocupava este cargo o perde (a API é a fonte da verdade).
+                passar_cargo(cargo, Membro.objects.filter(sigla=sigla).values_list('pk', flat=True).first())
                 _, criado = Membro.objects.update_or_create(
-                    sigla=usuario['username'].upper(),
+                    sigla=sigla,
                     defaults={
                         'nome': nome[:120],
                         'email': usuario['email'].lower(),
                         'foto_url': foto_do_membro(usuario),
-                        'cargo': ' '.join((usuario.get('role') or '').split())[:80],
+                        'cargo': cargo,
                     },
                 )
                 if criado:

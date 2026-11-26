@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Campo from './Campo.jsx'
 import { useFormulario } from '../hooks/useFormulario.js'
-import { api } from '../api/useApi.js'
+import { useEnviarDocumento } from '../api/queries.js'
 import { formatarTamanho } from '../utils/formatar.js'
 
 const TIPOS_DOCUMENTO = [
@@ -18,8 +18,10 @@ const TIPOS_DOCUMENTO = [
 const FORMATOS = '.pdf,.doc,.docx,.odt,.txt,.xls,.xlsx,.ods,.csv,.ppt,.pptx,.odp,.png,.jpg,.jpeg,.zip'
 const TAMANHO_MAXIMO = 20 * 1024 * 1024
 
-export default function DocumentoForm({ projetoId, aoSalvar, aoCancelar }) {
+export default function DocumentoForm({ projetoId, podeContrato = true, aoSalvar, aoCancelar }) {
+  const tipos = TIPOS_DOCUMENTO.filter(([valor]) => podeContrato || valor !== 'contrato')
   const [arquivo, setArquivo] = useState(null)
+  const envio = useEnviarDocumento()
   const { valores, alterar, erros, erroGeral, enviando, enviar } = useFormulario({
     tipo: 'abertura',
     titulo: '',
@@ -46,7 +48,7 @@ export default function DocumentoForm({ projetoId, aoSalvar, aoCancelar }) {
     dados.append('titulo', valores.titulo.trim())
     dados.append('arquivo', arquivo)
 
-    const salvo = await enviar(() => api.enviarDocumento(dados))
+    const salvo = await enviar(() => envio.mutateAsync(dados))
     if (salvo) aoSalvar()
   }
 
@@ -80,7 +82,7 @@ export default function DocumentoForm({ projetoId, aoSalvar, aoCancelar }) {
       <div className="formulario__linha">
         <Campo rotulo="Tipo" nome="tipo" erro={erros.tipo} obrigatorio>
           <select id="tipo" name="tipo" value={valores.tipo} onChange={alterar}>
-            {TIPOS_DOCUMENTO.map(([valor, texto]) => (
+            {tipos.map(([valor, texto]) => (
               <option key={valor} value={valor}>
                 {texto}
               </option>

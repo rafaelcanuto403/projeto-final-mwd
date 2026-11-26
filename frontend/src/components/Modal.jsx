@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export default function Modal({ aberto, titulo, aoFechar, children }) {
+export default function Modal({ aberto, titulo, aoFechar, largo = false, children }) {
   const dialogo = useRef(null)
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export default function Modal({ aberto, titulo, aoFechar, children }) {
   return (
     <dialog
       ref={dialogo}
-      className="modal"
+      className={`modal ${largo ? 'modal--largo' : ''}`}
       onClose={aoFechar}
       onClick={(evento) => evento.target === dialogo.current && aoFechar()}
     >

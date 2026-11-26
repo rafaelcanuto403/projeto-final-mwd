@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
 import { Carregando, Erro, Vazio } from '../components/Estado.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-import { api, useApi } from '../api/useApi.js'
+import { consultas, useConsultas, useExcluirMembro } from '../api/queries.js'
 
 const ORDEM_STATUS = { em_andamento: 0, planejamento: 1, concluido: 2 }
 
@@ -11,11 +11,9 @@ export default function MembroPage() {
   const { id } = useParams()
   const navegar = useNavigate()
   const [erroAcao, setErroAcao] = useState(null)
+  const exclusao = useExcluirMembro()
 
-  const { dados, carregando, erro } = useApi(
-    () => Promise.all([api.buscarMembro(id), api.listarAlocacoesDoMembro(id)]),
-    [id],
-  )
+  const { dados, carregando, erro } = useConsultas([consultas.membro(id), consultas.alocacoesDoMembro(id)])
 
   if (carregando) return <Carregando />
   if (erro) return <Erro mensagem={erro} />
@@ -35,7 +33,7 @@ export default function MembroPage() {
         : ''
     if (!window.confirm(`Excluir ${membro.nome} (${membro.sigla})?${aviso} Esta ação não pode ser desfeita.`)) return
     try {
-      await api.excluirMembro(membro.id)
+      await exclusao.mutateAsync(membro.id)
       navegar('/membros')
     } catch (e) {
       setErroAcao(e.message)
@@ -61,12 +59,16 @@ export default function MembroPage() {
           </a>
         </div>
         <div className="acoes acoes--direita">
-          <Link to={`/membros/${membro.id}/editar`} className="botao botao--fantasma">
-            Editar
-          </Link>
-          <button type="button" className="botao botao--perigo" onClick={excluirMembro}>
-            Excluir
-          </button>
+          {membro.permissoes.editar && (
+            <Link to={`/membros/${membro.id}/editar`} className="botao botao--fantasma">
+              Editar
+            </Link>
+          )}
+          {membro.permissoes.excluir && (
+            <button type="button" className="botao botao--perigo" onClick={excluirMembro}>
+              Excluir
+            </button>
+          )}
         </div>
       </header>
 
