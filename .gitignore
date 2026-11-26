@@ -23,6 +23,7 @@ build/
 # SO / editores
 .DS_Store
 Thumbs.db
+desktop.ini
 .idea/
 
 # Arquivos fora do controle de versão

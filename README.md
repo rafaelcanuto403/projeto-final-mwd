@@ -30,6 +30,8 @@ Sistema web para acompanhar os projetos que o NEO realizou e está realizando co
 
 ## Telas
 
+![Login](docs/prints/00-login.png)
+
 | Empresas parceiras | Projetos de uma EP |
 |---|---|
 | ![Empresas parceiras](docs/prints/02-empresas-parceiras.png) | ![Projetos da EP](docs/prints/03-projetos-da-ep.png) |
@@ -226,7 +228,8 @@ Todas as chamadas à API passam pelo TanStack Query (`frontend/src/api/queries.j
   8 s; erros definitivos (400, 401, 403, 404) não.
 - **Cache por usuário:** entrar, sair ou ter a sessão expirada limpa o cache inteiro, para que dados e
   permissões de um usuário nunca apareçam para outro.
-- **Devtools:** em `npm run dev`, o botão do TanStack Query no canto inferior esquerdo mostra o que está
+- **Devtools:** em `npm run dev`, o botão com a logo do NEO no canto inferior esquerdo abre o painel do TanStack Query
+  (`components/DevtoolsNeo.jsx`), que mostra o que está
   em cache, o que está desatualizado e cada requisição. Ele não entra no build de produção.
 
 ## Observações
