@@ -8,6 +8,8 @@ export default function EmpresasPage() {
   const pode = usePode()
   const { dados, carregando, erro } = useConsultas([consultas.empresas(), consultas.projetos()])
   const [empresas, projetos] = dados
+  // Só mostra a lista quando as duas consultas chegaram (a faixa de cada EP usa os projetos).
+  const pronto = !carregando && !erro
 
   return (
     <section>
@@ -29,9 +31,9 @@ export default function EmpresasPage() {
 
       {carregando && <Carregando />}
       {erro && <Erro mensagem={erro} />}
-      {empresas?.length === 0 && <Vazio texto="Nenhuma empresa parceira cadastrada." />}
+      {pronto && empresas.length === 0 && <Vazio texto="Nenhuma empresa parceira cadastrada." />}
 
-      {empresas?.length > 0 && (
+      {pronto && empresas.length > 0 && (
         <div className="pilha-empresas">
           {empresas.map((empresa) => (
             <EmpresaFaixa

@@ -15,6 +15,8 @@ export default function EmpresaProjetosPage() {
 
   const { dados, carregando, erro } = useConsultas([consultas.empresa(id), consultas.projetosDaEmpresa(id)])
   const [empresa, projetos] = dados
+  // Só mostra o conteúdo quando a empresa e os projetos dela chegaram.
+  const pronto = !carregando && !erro
 
   async function excluirEmpresa() {
     if (!window.confirm(`Excluir a empresa ${empresa.nome}? Esta ação não pode ser desfeita.`)) return
@@ -36,7 +38,7 @@ export default function EmpresaProjetosPage() {
       {erro && <Erro mensagem={erro} />}
       {erroAcao && <p className="alerta alerta--erro">{erroAcao}</p>}
 
-      {empresa && (
+      {pronto && (
         <>
           <header className="cabecalho-empresa">
             {empresa.logo_url && (
