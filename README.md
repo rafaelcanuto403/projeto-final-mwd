@@ -1,7 +1,7 @@
 ﻿# Projeto Final MWD: Hub de Projetos do NEO
 
 Aplicação web para acompanhar os projetos que o NEO realizou e está realizando com as
-**empresas parceiras (EPs)** e a **equipe de membros** alocada em cada projeto.
+**empresas parceiras (EPs)** e a **equipe de membros do grupo** alocada em cada projeto.
 
 - **Frontend:** React 19 + Vite + React Router + TanStack Query (cache das requisições), CSS puro com tema escuro
 - **Backend:** API REST com Django 6 + Django REST Framework, banco SQLite
