@@ -232,7 +232,7 @@ Todas as chamadas à API passam pelo TanStack Query (`frontend/src/api/queries.j
   (`components/DevtoolsNeo.jsx`), que mostra o que está
   em cache, o que está desatualizado e cada requisição. Ele não entra no build de produção.
 
-## Observações
+## Observações Finais
 
 - **Logos:** ficam em `frontend/public/logos/` e são cadastradas pelo caminho (ex.: `/logos/weg.svg`).
   Use SVG ou PNG com fundo transparente: o CSS deixa todas brancas para o tema escuro.
